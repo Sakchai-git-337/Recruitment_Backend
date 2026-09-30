@@ -107,6 +107,8 @@ func main() {
 
 	//applications
 	r.POST("/applications", createApplication)
+	r.GET("/applications", getApplications)
+	r.GET("/applications/:id", getApplicationByID)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -493,3 +495,101 @@ func createApplication(c *gin.Context) {
 	c.JSON(http.StatusCreated, app)
 }
 
+func getApplications(c *gin.Context) {
+    status := c.Query("status")
+
+    query := `
+        SELECT application_id, user_id, job_id, apply_date, status, note
+        FROM applications
+    `
+
+    var rows pgx.Rows
+    var err error
+
+    if status == "" {
+        query += ` ORDER BY application_id`
+
+        rows, err = db.Query(
+            context.Background(),
+            query,
+        )
+    } else {
+        query += `
+            WHERE status = $1
+            ORDER BY application_id
+        `
+
+        rows, err = db.Query(
+            context.Background(),
+            query,
+            status,
+        )
+    }
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "error": err.Error(),
+        })
+        return
+    }
+
+    defer rows.Close()
+
+    var applications []Application
+
+    for rows.Next() {
+        var app Application
+
+        err := rows.Scan(
+            &app.ApplicationID,
+            &app.UserID,
+            &app.JobID,
+            &app.ApplyDate,
+            &app.Status,
+            &app.Note,
+        )
+
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "error": err.Error(),
+            })
+            return
+        }
+
+        applications = append(applications, app)
+    }
+
+    c.JSON(http.StatusOK, applications)
+}
+
+func getApplicationByID(c *gin.Context) {
+    id := c.Param("id")
+
+    var app Application
+
+    err := db.QueryRow(
+        context.Background(),
+        `
+        SELECT application_id, user_id, job_id, apply_date, status, note
+        FROM applications
+        WHERE application_id = $1
+        `,
+        id,
+    ).Scan(
+        &app.ApplicationID,
+        &app.UserID,
+        &app.JobID,
+        &app.ApplyDate,
+        &app.Status,
+        &app.Note,
+    )
+
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "error": "Application not found",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, app)
+}
