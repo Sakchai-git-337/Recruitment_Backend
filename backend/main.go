@@ -1,3 +1,4 @@
+// Container name : recruitment-postgres
 package main
 
 import (
@@ -6,10 +7,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 )
 
 var db *pgxpool.Pool
@@ -18,6 +21,7 @@ type User struct {
 	UserID   int    `json:"user_id"`
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
+	Password string `json:"password"`
 	Phone    string `json:"phone"`
 	Role     string `json:"role"`
 }
@@ -30,6 +34,15 @@ type Job struct {
 	Location    string `json:"location"`
 	Status      string `json:"status"`
 	CreatedBy   int    `json:"created_by"`
+}
+
+type Application struct {
+    ApplicationID int       `json:"application_id"`
+    UserID        int       `json:"user_id"`
+    JobID         int       `json:"job_id"`
+    ApplyDate     time.Time `json:"apply_date"`
+    Status        string    `json:"status"`
+    Note          string    `json:"note"`
 }
 
 func initDB() {
@@ -47,7 +60,12 @@ func initDB() {
 
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		dbUser, dbPassword, dbHost, dbPort, dbName, dbSSLMode,
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+		dbSSLMode,
 	)
 
 	db, err = pgxpool.New(context.Background(), dsn)
@@ -75,9 +93,20 @@ func main() {
 		})
 	})
 
+	// Users
 	r.GET("/users", getUsers)
+	r.GET("/users/:id", getUserByID)
+	r.POST("/users", createUser)
+	r.DELETE("/users/:id", deleteUser)
+
+	// Jobs
 	r.GET("/jobs", getJobs)
+	r.GET("/jobs/:id", getJobByID)
 	r.POST("/jobs", createJob)
+	r.DELETE("/jobs/:id", deleteJob)
+
+	//applications
+	r.POST("/applications", createApplication)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -88,69 +117,293 @@ func main() {
 }
 
 func getUsers(c *gin.Context) {
-	rows, err := db.Query(context.Background(), `
-		SELECT user_id, full_name, email, phone, role
+	// สำหรับดูและค้นหาข้อมูล User
+	search := c.Query("search")
+
+	query := `
+		SELECT user_id, full_name, email, password, phone, role
 		FROM users
-		ORDER BY user_id
-	`)
+	`
+
+	var rows pgx.Rows
+	var err error
+
+	if search == "" {
+		query += ` ORDER BY user_id`
+
+		rows, err = db.Query(
+			context.Background(),
+			query,
+		)
+	} else {
+		query += `
+			WHERE full_name ILIKE $1
+			   OR email ILIKE $1
+			   OR phone ILIKE $1
+			ORDER BY user_id
+		`
+
+		rows, err = db.Query(
+			context.Background(),
+			query,
+			"%"+search+"%",
+		)
+	}
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
+
 	defer rows.Close()
 
 	var users []User
 
 	for rows.Next() {
 		var u User
-		err := rows.Scan(&u.UserID, &u.FullName, &u.Email, &u.Phone, &u.Role)
+
+		err := rows.Scan(
+			&u.UserID,
+			&u.FullName,
+			&u.Email,
+			&u.Password,
+			&u.Phone,
+			&u.Role,
+		)
+
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
 			return
 		}
+
 		users = append(users, u)
 	}
 
 	c.JSON(http.StatusOK, users)
 }
 
-func getJobs(c *gin.Context) {
-	rows, err := db.Query(context.Background(), `
-		SELECT job_id, title, description, requirement, location, status, created_by
-		FROM jobs
-		ORDER BY job_id
-	`)
+func getUserByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var user User
+
+	err := db.QueryRow(
+		context.Background(),
+		`
+		SELECT user_id, full_name, email, password, phone, role
+		FROM users
+		WHERE user_id = $1
+		`,
+		id,
+	).Scan(
+		&user.UserID,
+		&user.FullName,
+		&user.Email,
+		&user.Password,
+		&user.Phone,
+		&user.Role,
+	)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "User not found",
+		})
 		return
 	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func createUser(c *gin.Context) {
+	var user User
+
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	query := `
+		INSERT INTO users (
+			full_name,
+			email,
+			password,
+			phone,
+			role
+		)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING user_id
+	`
+
+	err := db.QueryRow(
+		context.Background(),
+		query,
+		user.FullName,
+		user.Email,
+		user.Password,
+		user.Phone,
+		user.Role,
+	).Scan(&user.UserID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
+func deleteUser(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := db.Exec(
+		context.Background(),
+		"DELETE FROM users WHERE user_id = $1",
+		id,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User deleted successfully",
+	})
+}
+
+func getJobs(c *gin.Context) {
+	search := c.Query("search")
+
+	query := `
+		SELECT job_id, title, description, requirement, location, status, created_by
+		FROM jobs
+	`
+
+	var rows pgx.Rows
+	var err error
+
+	if search == "" {
+		query += ` ORDER BY job_id`
+
+		rows, err = db.Query(
+			context.Background(),
+			query,
+		)
+	} else {
+		query += `
+			WHERE title ILIKE $1
+			   OR description ILIKE $1
+			   OR requirement ILIKE $1
+			   OR location ILIKE $1
+			ORDER BY job_id
+		`
+
+		rows, err = db.Query(
+			context.Background(),
+			query,
+			"%"+search+"%",
+		)
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
 	defer rows.Close()
 
 	var jobs []Job
 
 	for rows.Next() {
 		var j Job
-		err := rows.Scan(&j.JobID, &j.Title, &j.Description, &j.Requirement, &j.Location, &j.Status, &j.CreatedBy)
+
+		err := rows.Scan(
+			&j.JobID,
+			&j.Title,
+			&j.Description,
+			&j.Requirement,
+			&j.Location,
+			&j.Status,
+			&j.CreatedBy,
+		)
+
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
 			return
 		}
+
 		jobs = append(jobs, j)
 	}
 
 	c.JSON(http.StatusOK, jobs)
 }
 
+func getJobByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var job Job
+
+	err := db.QueryRow(
+		context.Background(),
+		`
+		SELECT job_id, title, description, requirement, location, status, created_by
+		FROM jobs
+		WHERE job_id = $1
+		`,
+		id,
+	).Scan(
+		&job.JobID,
+		&job.Title,
+		&job.Description,
+		&job.Requirement,
+		&job.Location,
+		&job.Status,
+		&job.CreatedBy,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Job not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, job)
+}
+
 func createJob(c *gin.Context) {
 	var job Job
 
 	if err := c.ShouldBindJSON(&job); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	query := `
-		INSERT INTO jobs (title, description, requirement, location, status, created_by)
+		INSERT INTO jobs (
+			title,
+			description,
+			requirement,
+			location,
+			status,
+			created_by
+		)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING job_id
 	`
@@ -167,9 +420,76 @@ func createJob(c *gin.Context) {
 	).Scan(&job.JobID)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, job)
 }
+
+func deleteJob(c *gin.Context) {
+	id := c.Param("id")
+
+	_, err := db.Exec(
+		context.Background(),
+		"DELETE FROM jobs WHERE job_id = $1",
+		id,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Job deleted successfully",
+	})
+}
+
+func createApplication(c *gin.Context) {
+	var app Application
+
+	if err := c.ShouldBindJSON(&app); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	query := `
+		INSERT INTO applications (
+			user_id,
+			job_id,
+			status,
+			note
+		)
+		VALUES ($1, $2, $3, $4)
+		RETURNING application_id, apply_date
+	`
+
+	err := db.QueryRow(
+		context.Background(),
+		query,
+		app.UserID,
+		app.JobID,
+		app.Status,
+		app.Note,
+	).Scan(
+		&app.ApplicationID,
+		&app.ApplyDate,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, app)
+}
+
