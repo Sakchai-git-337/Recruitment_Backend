@@ -23,6 +23,7 @@ export default function JobKanbanPage() {
   const [users, setUsers] = useState<Map<number, User>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [moving, setMoving] = useState<number[]>([])
   const [over, setOver] = useState<AppStatus | null>(null)
 
   useEffect(() => {
@@ -53,15 +54,18 @@ export default function JobKanbanPage() {
   const groups = useMemo(() => groupByStatus(apps), [apps])
 
   async function move(app: Application, status: AppStatus) {
-    if (app.status === status) return
+    if (app.status === status || moving.includes(app.application_id)) return
     const prev = app.status
     setApps((list) => list.map((a) => (a.application_id === app.application_id ? { ...a, status } : a)))
     setError("")
+    setMoving((m) => [...m, app.application_id])
     try {
       await api(`/applications/${app.application_id}`, { method: "PATCH", body: { status, note: app.note } })
     } catch (e) {
       setApps((list) => list.map((a) => (a.application_id === app.application_id ? { ...a, status: prev } : a)))
       setError((e as Error).message)
+    } finally {
+      setMoving((m) => m.filter((x) => x !== app.application_id))
     }
   }
 
@@ -111,7 +115,7 @@ export default function JobKanbanPage() {
                 return (
                   <div
                     key={app.application_id}
-                    draggable
+                    draggable={!moving.includes(app.application_id)}
                     onDragStart={(e) => e.dataTransfer.setData("text/plain", String(app.application_id))}
                     onDragEnd={() => setOver(null)}
                     className="space-y-1 rounded-lg border bg-white p-3 text-sm shadow-sm"
@@ -120,11 +124,12 @@ export default function JobKanbanPage() {
                       {u?.full_name ?? `ผู้สมัคร #${app.user_id}`}
                     </Link>
                     {u?.email && <p className="truncate text-xs text-gray-500">{u.email}</p>}
-                    <p className="text-xs text-gray-400">{app.apply_date?.slice(0, 10)}</p>
+                    <p className="text-xs text-gray-400">{app.apply_date ? new Date(app.apply_date).toLocaleDateString("th-TH") : ""}</p>
                     {app.note && <p className="line-clamp-2 text-xs text-gray-600">{app.note}</p>}
                     <select
                       aria-label="เปลี่ยนสถานะ"
                       value={app.status}
+                      disabled={moving.includes(app.application_id)}
                       onChange={(e) => move(app, e.target.value as AppStatus)}
                       className="w-full rounded border border-gray-200 bg-white px-1 py-0.5 text-xs"
                     >
