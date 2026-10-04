@@ -53,15 +53,13 @@ func getJobs(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	var jobs []Job
+	jobs := []Job{}
 
 	for rows.Next() {
 		var j Job
@@ -77,20 +75,26 @@ func getJobs(c *gin.Context) {
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			respondDBError(c, err)
 			return
 		}
 
 		jobs = append(jobs, j)
 	}
 
+	if err := rows.Err(); err != nil {
+		respondDBError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, jobs)
 }
 
 func getJobByID(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var job Job
 
@@ -113,9 +117,7 @@ func getJobByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Job not found",
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -126,9 +128,7 @@ func createJob(c *gin.Context) {
 	var job Job
 
 	if err := c.ShouldBindJSON(&job); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -138,16 +138,12 @@ func createJob(c *gin.Context) {
 		job.Location == "" ||
 		job.Status == "" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "All fields are required",
-		})
+		respondError(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
 	}
 
 	if job.Status != "open" && job.Status != "closed" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid status",
-		})
+		respondError(c, http.StatusBadRequest, "status ไม่ถูกต้อง")
 		return
 	}
 
@@ -176,9 +172,7 @@ func createJob(c *gin.Context) {
 	).Scan(&job.JobID)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -186,7 +180,10 @@ func createJob(c *gin.Context) {
 }
 
 func deleteJob(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	result, err := db.Exec(
 		context.Background(),
@@ -195,16 +192,12 @@ func deleteJob(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Job not found",
-		})
+		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 
@@ -214,7 +207,10 @@ func deleteJob(c *gin.Context) {
 }
 
 func updateJob(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var data struct {
 		Title       string `json:"title"`
@@ -226,9 +222,7 @@ func updateJob(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -265,16 +259,7 @@ func updateJob(c *gin.Context) {
 	)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "Job not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 

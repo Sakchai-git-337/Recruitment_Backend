@@ -22,9 +22,7 @@ func createApplication(c *gin.Context) {
 	var app Application
 
 	if err := c.ShouldBindJSON(&app); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -33,9 +31,7 @@ func createApplication(c *gin.Context) {
 		app.JobID == 0 ||
 		app.Status == "" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "user_id, job_id and status are required",
-		})
+		respondError(c, http.StatusBadRequest, "ต้องระบุ user_id, job_id และ status")
 		return
 	}
 
@@ -46,9 +42,7 @@ func createApplication(c *gin.Context) {
 		app.Status != "passed" &&
 		app.Status != "rejected" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid application status",
-		})
+		respondError(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
 		return
 	}
 
@@ -76,9 +70,7 @@ func createApplication(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -129,15 +121,13 @@ func getApplications(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	var applications []Application
+	applications := []Application{}
 
 	for rows.Next() {
 		var app Application
@@ -152,20 +142,26 @@ func getApplications(c *gin.Context) {
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			respondDBError(c, err)
 			return
 		}
 
 		applications = append(applications, app)
 	}
 
+	if err := rows.Err(); err != nil {
+		respondDBError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, applications)
 }
 
 func getApplicationByID(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var app Application
 
@@ -187,9 +183,7 @@ func getApplicationByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Application not found",
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -197,7 +191,10 @@ func getApplicationByID(c *gin.Context) {
 }
 
 func updateApplication(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var data struct {
 		Status string `json:"status"`
@@ -205,16 +202,12 @@ func updateApplication(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if data.Status == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "status is required",
-		})
+		respondError(c, http.StatusBadRequest, "ต้องระบุ status")
 		return
 	}
 
@@ -224,9 +217,7 @@ func updateApplication(c *gin.Context) {
 		data.Status != "passed" &&
 		data.Status != "rejected" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid application status",
-		})
+		respondError(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
 		return
 	}
 
@@ -244,16 +235,12 @@ func updateApplication(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Application not found",
-		})
+		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

@@ -21,17 +21,13 @@ func createWorkTest(c *gin.Context) {
 	var test WorkTest
 
 	if err := c.ShouldBindJSON(&test); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if test.ApplicationID == 0 ||
 		test.AssignedBy == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "application_id and assigned_by are required",
-		})
+		respondError(c, http.StatusBadRequest, "ต้องระบุ application_id และ assigned_by")
 		return
 	}
 
@@ -58,9 +54,7 @@ func createWorkTest(c *gin.Context) {
 	).Scan(&test.TestID)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -79,13 +73,13 @@ func getWorkTests(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondDBError(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	var tests []WorkTest
+	tests := []WorkTest{}
 
 	for rows.Next() {
 		var test WorkTest
@@ -100,18 +94,26 @@ func getWorkTests(c *gin.Context) {
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			respondDBError(c, err)
 			return
 		}
 
 		tests = append(tests, test)
 	}
 
+	if err := rows.Err(); err != nil {
+		respondDBError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, tests)
 }
 
 func getWorkTestByID(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var test WorkTest
 
@@ -134,7 +136,7 @@ func getWorkTestByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Work test not found"})
+		respondDBError(c, err)
 		return
 	}
 
@@ -142,7 +144,10 @@ func getWorkTestByID(c *gin.Context) {
 }
 
 func updateWorkTest(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var data struct {
 		TestResult string `json:"test_result"`
@@ -150,16 +155,12 @@ func updateWorkTest(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if data.TestResult == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "test_result is required",
-		})
+		respondError(c, http.StatusBadRequest, "ต้องระบุ test_result")
 		return
 	}
 
@@ -167,9 +168,7 @@ func updateWorkTest(c *gin.Context) {
 		data.TestResult != "fail" &&
 		data.TestResult != "pending" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid test result",
-		})
+		respondError(c, http.StatusBadRequest, "test_result ไม่ถูกต้อง")
 		return
 	}
 
@@ -187,16 +186,12 @@ func updateWorkTest(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Work test not found",
-		})
+		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,14 @@ import (
 )
 
 var db *pgxpool.Pool
+
+//go:embed schema.sql
+var schemaSQL string
+
+func applySchema(ctx context.Context) error {
+	_, err := db.Exec(ctx, schemaSQL)
+	return err
+}
 
 func initDB() {
 	err := godotenv.Load()
@@ -43,6 +52,10 @@ func initDB() {
 	err = db.Ping(context.Background())
 	if err != nil {
 		log.Fatal("Database ping failed:", err)
+	}
+
+	if err := applySchema(context.Background()); err != nil {
+		log.Fatal("apply schema: ", err)
 	}
 
 	log.Println("Connected to PostgreSQL successfully!")

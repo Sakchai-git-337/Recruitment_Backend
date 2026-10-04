@@ -25,9 +25,7 @@ func loginUser(c *gin.Context) {
 
 	// รับข้อมูลจาก Frontend
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -53,17 +51,13 @@ func loginUser(c *gin.Context) {
 
 	// ไม่พบ email
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid email or password",
-		})
+		respondError(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 		return
 	}
 
 	// ตรวจ password
 	if user.Password != data.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid email or password",
-		})
+		respondError(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
 		return
 	}
 
@@ -107,15 +101,13 @@ func getUsers(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	var users []User
+	users := []User{}
 
 	for rows.Next() {
 		var user User
@@ -129,20 +121,26 @@ func getUsers(c *gin.Context) {
 		)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
+			respondDBError(c, err)
 			return
 		}
 
 		users = append(users, user)
 	}
 
+	if err := rows.Err(); err != nil {
+		respondDBError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, users)
 }
 
 func getUserByID(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var user User
 
@@ -163,16 +161,7 @@ func getUserByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "User not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -183,9 +172,7 @@ func createUser(c *gin.Context) {
 	var user User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -196,17 +183,13 @@ func createUser(c *gin.Context) {
 		user.Phone == "" ||
 		user.Role == "" {
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "All fields are required",
-		})
+		respondError(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
 	}
 
 	// ตรวจสอบ role
 	if user.Role != "applicant" && user.Role != "recruitment" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid role",
-		})
+		respondError(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
 		return
 	}
 
@@ -233,9 +216,7 @@ func createUser(c *gin.Context) {
 	).Scan(&user.UserID)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
@@ -246,7 +227,10 @@ func createUser(c *gin.Context) {
 }
 
 func deleteUser(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	result, err := db.Exec(
 		context.Background(),
@@ -255,16 +239,12 @@ func deleteUser(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "User not found",
-		})
+		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 
@@ -274,7 +254,10 @@ func deleteUser(c *gin.Context) {
 }
 
 func updateUser(c *gin.Context) {
-	id := c.Param("id")
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
 
 	var data struct {
 		FullName string `json:"full_name"`
@@ -285,9 +268,7 @@ func updateUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
-		})
+		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -321,16 +302,7 @@ func updateUser(c *gin.Context) {
 	)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "User not found",
-			})
-			return
-		}
-
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		respondDBError(c, err)
 		return
 	}
 

@@ -2,17 +2,33 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
+// corsOrigins reads CORS_ORIGINS (comma-separated), default http://localhost:3000.
+func corsOrigins() []string {
+	var out []string
+	for _, o := range strings.Split(os.Getenv("CORS_ORIGINS"), ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			out = append(out, o)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"http://localhost:3000"}
+	}
+	return out
+}
+
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     corsOrigins(),
 		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
 	}))
 
