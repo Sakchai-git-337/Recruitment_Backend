@@ -169,3 +169,12 @@ test("social_security_hospital only shows with social security", () => {
   assert.equal(f.showIf?.({ social_security: "has" }), true)
   assert.equal(f.showIf?.({ social_security: "none_or_expired" }), false)
 })
+
+test("postcode: optional, 5 digits when filled (present + parents)", () => {
+  const f = validForm()
+  for (const k of ["present_postcode", "parents_postcode"]) {
+    assert.deepEqual(Object.keys(validateAll({ ...f, [k]: "10110" })), [])
+    assert.deepEqual(Object.keys(validateAll({ ...f, [k]: "" })), [])
+    for (const bad of ["1011", "101100", "10a10"]) assert.deepEqual(Object.keys(validateAll({ ...f, [k]: bad })), [k])
+  }
+})

@@ -21,7 +21,9 @@ export type Field = {
   /** number must be > 0 */
   positive?: boolean
   /** extra rule */
-  format?: "national_id" | "phone" | "email" | "signature" | "consent"
+  format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode"
+  /** text: "thai-address" = ตำบล combobox that also fills sibling `<prefix>district|province|postcode`; "thai-province" = province suggestions */
+  widget?: "thai-address" | "thai-province"
   /** unit shown next to a number input (บาท, ซม., ...) */
   unit?: string
   /** bool: [label for true, label for false]; default ใช่/ไม่ใช่ */
@@ -105,8 +107,11 @@ export const SECTIONS: Section[] = [
     id: "contact",
     title: "ที่อยู่และการติดต่อ",
     fields: [
-      area("present_address", "ที่อยู่ปัจจุบัน", { required: true }),
-      text("present_province", "จังหวัด", { required: true }),
+      area("present_address", "บ้านเลขที่ / หมู่ / ซอย / ถนน", { required: true }),
+      text("present_subdistrict", "ตำบล/แขวง", { widget: "thai-address" }),
+      text("present_district", "อำเภอ/เขต"),
+      text("present_province", "จังหวัด", { required: true, widget: "thai-province" }),
+      text("present_postcode", "รหัสไปรษณีย์", { format: "postcode" }),
       choice("residence_type", "ลักษณะที่อยู่อาศัย", opts([["own", "บ้านตนเอง"], ["parents", "บ้านบิดา-มารดา"], ["rental", "บ้านเช่า"], ["dormitory", "หอพัก"], ["other", "อื่นๆ"]])),
       text("mobile_phone", "เบอร์โทรศัพท์มือถือ", { required: true, format: "phone" }),
       text("home_phone", "เบอร์โทรศัพท์บ้าน"),
@@ -123,7 +128,11 @@ export const SECTIONS: Section[] = [
     fields: [
       ...parent("father", "บิดา"),
       ...parent("mother", "มารดา"),
-      area("parents_address", "ที่อยู่บิดา-มารดา"),
+      area("parents_address", "ที่อยู่บิดา-มารดา (บ้านเลขที่ / หมู่ / ซอย / ถนน)"),
+      text("parents_subdistrict", "ตำบล/แขวง", { widget: "thai-address" }),
+      text("parents_district", "อำเภอ/เขต"),
+      text("parents_province", "จังหวัด", { widget: "thai-province" }),
+      text("parents_postcode", "รหัสไปรษณีย์", { format: "postcode" }),
       choice("marital_status", "สถานภาพสมรส", opts([["single", "โสด"], ["married", "สมรส"], ["divorced", "หย่า"], ["widowed", "หม้าย"]])),
       text("spouse_name", "ชื่อ-นามสกุลคู่สมรส", { showIf: married }),
       choice("spouse_status", "สถานะคู่สมรส", STATUS, { showIf: married }),
@@ -334,6 +343,7 @@ function validateValue(f: Field, v: unknown, path: string, form: ApplicationForm
   const s = String(v).trim()
   if (f.format === "national_id" && !isValidNationalId(s)) err("เลขบัตรประชาชนไม่ถูกต้อง")
   if (f.format === "phone" && !/^\d{9,10}$/.test(s.replace(/[\s-]/g, ""))) err("เบอร์โทรศัพท์ต้องมี 9-10 หลัก")
+  if (f.format === "postcode" && !/^\d{5}$/.test(s)) err("รหัสไปรษณีย์ต้องมี 5 หลัก")
   if (f.format === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) err("อีเมลไม่ถูกต้อง")
   if (f.format === "signature" && squash(s) !== squash(`${form.first_name_th ?? ""} ${form.last_name_th ?? ""}`)) {
     err("ลายเซ็นต้องตรงกับชื่อ-นามสกุลที่กรอก")
