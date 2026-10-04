@@ -42,10 +42,10 @@ func IsUniqueViolation(err error) bool {
 }
 
 func ParseID(c *gin.Context) (int, bool) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		Respond(c, http.StatusBadRequest, "id ไม่ถูกต้อง")
 		return 0, false
 	}
-	return id, true
+	return int(id), true
 }

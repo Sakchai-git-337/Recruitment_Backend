@@ -32,6 +32,9 @@ func TestNotFoundAndBadID(t *testing.T) {
 	if w := doJSON(t, r, "GET", "/jobs/abc", "", nil); w.Code != 400 {
 		t.Errorf("want 400, got %d", w.Code)
 	}
+	if w := doJSON(t, r, "GET", "/jobs/99999999999", "", nil); w.Code != 400 {
+		t.Errorf("want 400 for int32 overflow, got %d", w.Code)
+	}
 }
 
 func TestDuplicateEmailConflict(t *testing.T) {

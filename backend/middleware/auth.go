@@ -2,13 +2,16 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
 	"backend/database"
+	"backend/httperr"
 	"backend/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 )
 
 func AuthRequired() gin.HandlerFunc {
@@ -20,12 +23,17 @@ func AuthRequired() gin.HandlerFunc {
 		}
 		var u models.User
 		err := database.DB.QueryRow(context.Background(),
-			`SELECT u.user_id, u.full_name, u.email, u.phone, u.role
+			`SELECT u.user_id, u.full_name, u.email, COALESCE(u.phone, ''), u.role
 			 FROM sessions s JOIN users u ON u.user_id = s.user_id
 			 WHERE s.token = $1 AND s.expires_at > now()`, tok,
 		).Scan(&u.UserID, &u.FullName, &u.Email, &u.Phone, &u.Role)
-		if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		if err != nil {
+			httperr.RespondDB(c, err)
+			c.Abort()
 			return
 		}
 		c.Set("user", u)

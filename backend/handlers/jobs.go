@@ -221,6 +221,11 @@ func UpdateJob(c *gin.Context) {
 		return
 	}
 
+	if data.Title == nil && data.Description == nil && data.Requirement == nil && data.Location == nil && data.Status == nil {
+		httperr.Respond(c, http.StatusBadRequest, "ไม่มีข้อมูลที่ต้องแก้ไข")
+		return
+	}
+
 	for _, f := range []*string{data.Title, data.Description, data.Requirement, data.Location} {
 		if f != nil && *f == "" {
 			httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")

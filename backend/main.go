@@ -1,4 +1,3 @@
-// Container name : recruitment-postgres
 package main
 
 import (
@@ -18,5 +17,7 @@ func main() {
 	database.Connect()
 	defer database.DB.Close()
 
-	routes.Setup().Run(":" + config.Port())
+	if err := routes.Setup().Run(":" + config.Port()); err != nil {
+		log.Fatal(err)
+	}
 }

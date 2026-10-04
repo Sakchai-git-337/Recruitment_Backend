@@ -24,8 +24,8 @@ func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	godotenv.Load("../.env")
 	if !strings.HasSuffix(os.Getenv("DB_NAME"), "_test") {
-		fmt.Println("skip: DB_NAME must end with _test")
-		os.Exit(0)
+		fmt.Fprintln(os.Stderr, "FATAL: DB_NAME must end with _test (refusing to run tests against a non-test database)")
+		os.Exit(1)
 	}
 	database.Connect()
 	code := m.Run()

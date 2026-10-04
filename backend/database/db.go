@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,15 +30,13 @@ func Connect() {
 	dbName := os.Getenv("DB_NAME")
 	dbSSLMode := os.Getenv("DB_SSLMODE")
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		dbUser,
-		dbPassword,
-		dbHost,
-		dbPort,
-		dbName,
-		dbSSLMode,
-	)
+	dsn := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(dbUser, dbPassword),
+		Host:     dbHost + ":" + dbPort,
+		Path:     dbName,
+		RawQuery: "sslmode=" + dbSSLMode,
+	}).String()
 
 	DB, err = pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -51,7 +49,7 @@ func Connect() {
 	}
 
 	if err := applySchema(context.Background()); err != nil {
-		log.Fatal("apply schema: ", err)
+		log.Fatal("apply schema failed (if this is the applications_user_job_uniq index, remove duplicate (user_id, job_id) rows then restart): ", err)
 	}
 
 	log.Println("Connected to PostgreSQL successfully!")

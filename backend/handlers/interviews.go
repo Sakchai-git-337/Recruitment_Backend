@@ -92,7 +92,7 @@ func GetInterviews(c *gin.Context) {
 	}
 
 	if v := c.Query("application_id"); v != "" {
-		n, err := strconv.Atoi(v)
+		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			httperr.Respond(c, http.StatusBadRequest, "application_id ไม่ถูกต้อง")
 			return

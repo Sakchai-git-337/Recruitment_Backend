@@ -16,7 +16,7 @@ func GetUsers(c *gin.Context) {
 	search := c.Query("search")
 
 	query := `
-		SELECT user_id, full_name, email, phone, role
+		SELECT user_id, full_name, email, COALESCE(phone, ''), role
 		FROM users
 	`
 
@@ -97,7 +97,7 @@ func GetUserByID(c *gin.Context) {
 	err := database.DB.QueryRow(
 		context.Background(),
 		`
-		SELECT user_id, full_name, email, phone, role
+		SELECT user_id, full_name, email, COALESCE(phone, ''), role
 		FROM users
 		WHERE user_id = $1
 		`,
@@ -245,7 +245,7 @@ func UpdateUser(c *gin.Context) {
 		     phone     = COALESCE($4, phone),
 		     role      = COALESCE($5, role)
 		 WHERE user_id = $6
-		 RETURNING user_id, full_name, email, phone, role`,
+		 RETURNING user_id, full_name, email, COALESCE(phone, ''), role`,
 		data.FullName, data.Email, data.Password, data.Phone, data.Role, id,
 	).Scan(&user.UserID, &user.FullName, &user.Email, &user.Phone, &user.Role)
 	if err != nil {
@@ -255,6 +255,18 @@ func UpdateUser(c *gin.Context) {
 		}
 		httperr.RespondDB(c, err)
 		return
+	}
+	if data.Password != nil {
+		// keep only the caller's own session; HR changing it drops all of the user's sessions
+		keep := ""
+		if middleware.CurrentUser(c).UserID == id {
+			keep = c.GetString("token")
+		}
+		if _, err := database.DB.Exec(context.Background(),
+			`DELETE FROM sessions WHERE user_id = $1 AND token <> $2`, id, keep); err != nil {
+			httperr.RespondDB(c, err)
+			return
+		}
 	}
 	c.JSON(http.StatusOK, user)
 }

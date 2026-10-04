@@ -227,3 +227,28 @@ func TestLongPasswordRejected(t *testing.T) {
 		t.Errorf("empty login: %d", w.Code)
 	}
 }
+
+func TestPasswordChangeKeepsOnlyCurrentSession(t *testing.T) {
+	r := newTestRouter(t)
+	u := seedUser(t, "U", "u@x.com", "old", "applicant")
+	a := loginToken(t, r, "u@x.com", "old")
+	b := loginToken(t, r, "u@x.com", "old")
+	if w := doJSON(t, r, "PATCH", fmt.Sprintf("/users/%d", u.UserID), a, map[string]string{"password": "new"}); w.Code != 200 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	if w := doJSON(t, r, "GET", fmt.Sprintf("/users/%d", u.UserID), a, nil); w.Code != 200 {
+		t.Errorf("A should still work: %d", w.Code)
+	}
+	if w := doJSON(t, r, "GET", fmt.Sprintf("/users/%d", u.UserID), b, nil); w.Code != 401 {
+		t.Errorf("B should be 401: %d", w.Code)
+	}
+}
+
+func TestUpdateJobEmptyBody(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	tok := loginToken(t, r, "hr@x.com", "pw")
+	if w := doJSON(t, r, "PATCH", "/jobs/1", tok, map[string]string{}); w.Code != 400 {
+		t.Errorf("want 400, got %d", w.Code)
+	}
+}

@@ -17,7 +17,7 @@ import (
 
 const applicationSelect = `
 	SELECT a.application_id, a.user_id, a.job_id, a.apply_date, a.status, a.note,
-	       u.full_name, u.email, u.phone, j.title
+	       u.full_name, u.email, COALESCE(u.phone, ''), j.title
 	FROM applications a
 	JOIN users u ON u.user_id = a.user_id
 	JOIN jobs j ON j.job_id = a.job_id
@@ -153,7 +153,7 @@ func GetApplications(c *gin.Context) {
 		if v == "" {
 			continue
 		}
-		n, err := strconv.Atoi(v)
+		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			httperr.Respond(c, http.StatusBadRequest, f.param+" ไม่ถูกต้อง")
 			return

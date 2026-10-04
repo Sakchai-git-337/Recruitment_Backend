@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -55,7 +56,7 @@ func Login(c *gin.Context) {
 
 	var user models.User
 	err := database.DB.QueryRow(context.Background(),
-		`SELECT user_id, full_name, email, password, phone, role FROM users WHERE email = $1`,
+		`SELECT user_id, full_name, email, password, COALESCE(phone, ''), role FROM users WHERE email = $1`,
 		data.Email,
 	).Scan(&user.UserID, &user.FullName, &user.Email, &user.Password, &user.Phone, &user.Role)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -79,8 +80,7 @@ func Login(c *gin.Context) {
 				`UPDATE users SET password = $1 WHERE user_id = $2`, h, user.UserID)
 		}
 		if err != nil {
-			httperr.RespondDB(c, err)
-			return
+			log.Println("legacy password rehash failed:", err)
 		}
 	}
 
@@ -92,6 +92,11 @@ func Login(c *gin.Context) {
 	if err != nil {
 		httperr.RespondDB(c, err)
 		return
+	}
+
+	if _, err := database.DB.Exec(context.Background(),
+		`DELETE FROM sessions WHERE expires_at < now()`); err != nil {
+		log.Println("purge expired sessions failed:", err)
 	}
 
 	user.Password = ""
