@@ -6,6 +6,7 @@ import (
 
 	"backend/database"
 	"backend/httperr"
+	"backend/middleware"
 	"backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -140,6 +141,8 @@ func CreateJob(c *gin.Context) {
 		return
 	}
 
+	job.CreatedBy = middleware.CurrentUser(c).UserID
+
 	query := `
 		INSERT INTO jobs (
 			title,
@@ -206,16 +209,27 @@ func UpdateJob(c *gin.Context) {
 	}
 
 	var data struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Requirement string `json:"requirement"`
-		Location    string `json:"location"`
-		Status      string `json:"status"`
-		CreatedBy   int    `json:"created_by"`
+		Title       *string `json:"title"`
+		Description *string `json:"description"`
+		Requirement *string `json:"requirement"`
+		Location    *string `json:"location"`
+		Status      *string `json:"status"`
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
 		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		return
+	}
+
+	for _, f := range []*string{data.Title, data.Description, data.Requirement, data.Location} {
+		if f != nil && *f == "" {
+			httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
+			return
+		}
+	}
+
+	if data.Status != nil && *data.Status != "open" && *data.Status != "closed" {
+		httperr.Respond(c, http.StatusBadRequest, "status ไม่ถูกต้อง")
 		return
 	}
 
@@ -225,13 +239,12 @@ func UpdateJob(c *gin.Context) {
 		context.Background(),
 		`
 		UPDATE jobs
-		SET title = $1,
-			description = $2,
-			requirement = $3,
-			location = $4,
-			status = $5,
-			created_by = $6
-		WHERE job_id = $7
+		SET title = COALESCE($1, title),
+			description = COALESCE($2, description),
+			requirement = COALESCE($3, requirement),
+			location = COALESCE($4, location),
+			status = COALESCE($5, status)
+		WHERE job_id = $6
 		RETURNING job_id, title, description, requirement, location, status, created_by
 		`,
 		data.Title,
@@ -239,7 +252,6 @@ func UpdateJob(c *gin.Context) {
 		data.Requirement,
 		data.Location,
 		data.Status,
-		data.CreatedBy,
 		id,
 	).Scan(
 		&job.JobID,

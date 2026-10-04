@@ -47,6 +47,7 @@ func Setup() *gin.Engine {
 	hr.PATCH("/jobs/:id", handlers.UpdateJob)
 	hr.DELETE("/jobs/:id", handlers.DeleteJob)
 	hr.PATCH("/applications/:id", handlers.UpdateApplication)
+	hr.DELETE("/applications/:id", handlers.DeleteApplication)
 	hr.POST("/screenings", handlers.CreateScreening)
 	hr.GET("/screenings", handlers.GetScreenings)
 	hr.GET("/screenings/:id", handlers.GetScreeningByID)
