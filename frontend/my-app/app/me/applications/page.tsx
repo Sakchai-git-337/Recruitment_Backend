@@ -6,7 +6,8 @@ import { CalendarClock, FileText, Folder, Inbox, Lock } from "lucide-react"
 import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
 import { localToday, showClosedNotice } from "@/lib/job-closed"
-import type { Application, Interview } from "@/lib/types"
+import { APP_STATUSES, APP_STATUS_LABEL, type AppStatus, type Application, type Interview } from "@/lib/types"
+import { cn } from "@/lib/utils"
 import { PublicShell } from "@/components/app/public-shell"
 import { RequireRole } from "@/components/app/require-role"
 import { PageHeader } from "@/components/app/page-header"
@@ -29,6 +30,7 @@ function Content() {
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<Application | null>(null)
   const [docs, setDocs] = useState<Application | null>(null)
+  const [status, setStatus] = useState<AppStatus | "all">("all")
 
   const fetchAll = () => Promise.all([api<Application[]>("/applications"), api<Interview[]>("/interviews")]).then(([apps, interviews]) => ({ apps, interviews }))
   const retry = useCallback(() => {
@@ -63,8 +65,26 @@ function Content() {
         <EmptyState icon={Inbox} title="คุณยังไม่ได้สมัครงาน" text="เลือกตำแหน่งที่สนใจแล้วสมัครได้เลย"
           action={<Button asChild><Link href="/">ดูตำแหน่งงาน</Link></Button>} />
       ) : (
+        <>
+        <div className="mb-4 flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="กรองตามสถานะ">
+          {(["all", ...APP_STATUSES] as const).map((t) => (
+            <button
+              key={t} type="button" role="tab" aria-selected={status === t} onClick={() => setStatus(t)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                status === t ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900",
+              )}
+            >
+              {t === "all" ? "ทั้งหมด" : APP_STATUS_LABEL[t]}
+              <span className="text-xs text-slate-400 tabular-nums">{t === "all" ? data.apps.length : data.apps.filter((a) => a.status === t).length}</span>
+            </button>
+          ))}
+        </div>
+        {status !== "all" && !data.apps.some((a) => a.status === status) ? (
+          <EmptyState icon={Inbox} title={`ไม่มีใบสมัครที่สถานะ "${APP_STATUS_LABEL[status]}"`} text="ลองเลือกสถานะอื่น" />
+        ) : (
         <ul className="space-y-4">
-          {[...data.apps].sort((a, b) => b.apply_date.localeCompare(a.apply_date)).map((a) => {
+          {data.apps.filter((a) => status === "all" || a.status === status).sort((a, b) => b.apply_date.localeCompare(a.apply_date)).map((a) => {
             const iv = a.status === "rejected" || a.status === "passed" ? undefined : nextInterview(a.application_id, data.interviews)
             return (
               <li key={a.application_id} className="rounded-xl border bg-card p-5 shadow-xs sm:p-6">
@@ -98,6 +118,8 @@ function Content() {
             )
           })}
         </ul>
+        )}
+        </>
       )}
       <FormDialog app={form} onClose={() => setForm(null)} />
       <DocumentsDialog app={docs} onClose={() => setDocs(null)} />
