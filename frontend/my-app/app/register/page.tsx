@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
-import { api } from "@/lib/api"
+import { api, ApiError } from "@/lib/api"
 import type { User } from "@/lib/types"
 import { ErrorText, inputClass } from "@/components/app-ui"
 
@@ -24,11 +24,10 @@ export default function RegisterPage() {
     setError("")
     setBusy(true)
     try {
-      await api<User>("/users", { method: "POST", body: { ...form, role: "applicant" } })
+      await api<User>("/users", { method: "POST", body: form })
       setDone(true)
     } catch (e) {
-      const msg = (e as Error).message
-      setError(msg.includes("duplicate") ? "อีเมลนี้ถูกใช้แล้ว" : msg)
+      setError(e instanceof ApiError && e.status === 409 ? "อีเมลนี้ถูกใช้แล้ว" : (e as Error).message)
     } finally {
       setBusy(false)
     }

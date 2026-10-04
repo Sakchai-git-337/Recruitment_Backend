@@ -46,3 +46,30 @@ test("api: sends JSON body and method", async () => {
   assert.equal(seen?.method, "POST")
   assert.equal(seen?.body, '{"a":1}')
 })
+
+function stubStorage(init: Record<string, string>) {
+  const m = new Map(Object.entries(init))
+  globalThis.localStorage = {
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, v),
+    removeItem: (k: string) => void m.delete(k),
+  } as unknown as Storage
+  return m
+}
+
+test("api: stored token is sent as Bearer Authorization", async () => {
+  stubStorage({ token: "tok" })
+  let seen: RequestInit | undefined
+  globalThis.fetch = async (_url, init) => { seen = init; return new Response("{}", { status: 200 }) }
+  await api("/jobs")
+  assert.equal((seen?.headers as Record<string, string>).Authorization, "Bearer tok")
+})
+
+test("api: 401 clears stored token and user", async () => {
+  const m = stubStorage({ token: "tok", user: "{}" })
+  globalThis.window = { dispatchEvent: () => true } as unknown as Window & typeof globalThis
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })
+  await assert.rejects(api("/jobs"), { status: 401 })
+  assert.equal(m.has("token"), false)
+  assert.equal(m.has("user"), false)
+})

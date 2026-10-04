@@ -12,7 +12,6 @@ import {
   type AppStatus,
   type Application,
   type Job,
-  type User,
 } from "@/lib/types"
 import { ErrorText, Loading } from "@/components/app-ui"
 
@@ -20,7 +19,6 @@ export default function JobKanbanPage() {
   const { id } = useParams<{ id: string }>()
   const [job, setJob] = useState<Job | null>(null)
   const [apps, setApps] = useState<Application[]>([])
-  const [users, setUsers] = useState<Map<number, User>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [moving, setMoving] = useState<number[]>([])
@@ -31,13 +29,11 @@ export default function JobKanbanPage() {
     Promise.all([
       api<Job>(`/jobs/${id}`),
       api<Application[] | null>(`/applications?job_id=${id}`),
-      api<User[] | null>("/users"),
     ])
-      .then(([j, a, u]) => {
+      .then(([j, a]) => {
         if (cancelled) return
         setJob(j)
         setApps(a ?? [])
-        setUsers(new Map((u ?? []).map((x) => [x.user_id, x])))
         setError("")
         setLoading(false)
       })
@@ -111,7 +107,6 @@ export default function JobKanbanPage() {
             <div className="space-y-2">
               {groups[status].length === 0 && <p className="px-1 text-xs text-gray-400">ไม่มีผู้สมัคร</p>}
               {groups[status].map((app) => {
-                const u = users.get(app.user_id)
                 return (
                   <div
                     key={app.application_id}
@@ -121,9 +116,9 @@ export default function JobKanbanPage() {
                     className="space-y-1 rounded-lg border bg-white p-3 text-sm shadow-sm"
                   >
                     <Link href={`/hr/applications/${app.application_id}`} className="font-medium hover:underline">
-                      {u?.full_name ?? `ผู้สมัคร #${app.user_id}`}
+                      {app.applicant_name ?? `ผู้สมัคร #${app.user_id}`}
                     </Link>
-                    {u?.email && <p className="truncate text-xs text-gray-500">{u.email}</p>}
+                    {app.applicant_email && <p className="truncate text-xs text-gray-500">{app.applicant_email}</p>}
                     <p className="text-xs text-gray-400">{app.apply_date ? new Date(app.apply_date).toLocaleDateString("th-TH") : ""}</p>
                     {app.note && <p className="line-clamp-2 text-xs text-gray-600">{app.note}</p>}
                     <select

@@ -11,23 +11,37 @@ export class ApiError extends Error {
   }
 }
 
+function token(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
 export async function api<T>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
   let res: Response
+  const headers: Record<string, string> = {}
+  if (opts.body !== undefined) headers["Content-Type"] = "application/json"
+  const tok = token()
+  if (tok) headers.Authorization = `Bearer ${tok}`
   try {
     res = await fetch(BASE + path, {
       method: opts.method ?? "GET",
-      headers: opts.body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     })
   } catch {
     throw new ApiError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", 0)
   }
   const data = await res.json().catch(() => null)
+  if (res.status === 401) logout()
   if (!res.ok) throw new ApiError(data?.error ?? `เกิดข้อผิดพลาด (${res.status})`, res.status)
   return data as T
 }
 
 const KEY = "user"
+const TOKEN_KEY = "token"
 
 function read(): string | null {
   try {
@@ -39,7 +53,7 @@ function read(): string | null {
 
 // storage event only fires cross-tab; fire it ourselves for this tab
 function notify() {
-  window.dispatchEvent(new Event("storage"))
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("storage"))
 }
 
 function subscribe(cb: () => void) {
@@ -47,8 +61,9 @@ function subscribe(cb: () => void) {
   return () => window.removeEventListener("storage", cb)
 }
 
-export function setUser(user: User) {
+export function setSession(token: string, user: User) {
   try {
+    localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(KEY, JSON.stringify(user))
   } catch {
     // storage blocked: user stays logged out
@@ -59,6 +74,7 @@ export function setUser(user: User) {
 export function logout() {
   try {
     localStorage.removeItem(KEY)
+    localStorage.removeItem(TOKEN_KEY)
   } catch {
     // nothing stored
   }

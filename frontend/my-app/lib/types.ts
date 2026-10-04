@@ -11,6 +11,7 @@ export type Job = {
 export type Application = {
   application_id: number; user_id: number; job_id: number
   apply_date: string; status: AppStatus; note: string
+  applicant_name?: string; applicant_email?: string; applicant_phone?: string; job_title?: string
 }
 export type Screening = {
   screening_id: number; application_id: number; screened_by: number

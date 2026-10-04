@@ -11,10 +11,8 @@ import {
   type Application,
   type Interview,
   type InterviewStatus,
-  type Job,
   type Result,
   type Screening,
-  type User,
   type WorkTest,
 } from "@/lib/types"
 import { ErrorText, Loading, StatusBar, inputClass } from "@/components/app-ui"
@@ -22,8 +20,6 @@ import { Button } from "@/components/ui/button"
 
 type Data = {
   app: Application
-  user: User
-  job: Job
   screenings: Screening[]
   interviews: Interview[]
   workTests: WorkTest[]
@@ -199,21 +195,17 @@ export default function ApplicationDetailPage() {
       .then((app) =>
         Promise.all([
           app,
-          api<User>(`/users/${app.user_id}`),
-          api<Job>(`/jobs/${app.job_id}`),
-          api<Screening[] | null>("/screenings"),
-          api<Interview[] | null>("/interviews"),
-          api<WorkTest[] | null>("/work-tests"),
+          api<Screening[] | null>(`/screenings?application_id=${id}`),
+          api<Interview[] | null>(`/interviews?application_id=${id}`),
+          api<WorkTest[] | null>(`/work-tests?application_id=${id}`),
         ]),
       )
-      .then(([app, user, job, s, i, w]) => {
+      .then(([app, s, i, w]) => {
         setData({
           app,
-          user,
-          job,
-          screenings: (s ?? []).filter((x) => x.application_id === app.application_id),
-          interviews: (i ?? []).filter((x) => x.application_id === app.application_id),
-          workTests: (w ?? []).filter((x) => x.application_id === app.application_id),
+          screenings: s ?? [],
+          interviews: i ?? [],
+          workTests: w ?? [],
         })
         setNote(null)
       })
@@ -223,7 +215,7 @@ export default function ApplicationDetailPage() {
   if (!me) return null
   if (!data) return error ? <ErrorText message={error} /> : <Loading />
 
-  const { app, user, job } = data
+  const { app } = data
   const run: Run = async (fn) => {
     let ok = false
     setError("")
@@ -244,18 +236,18 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Link href={`/hr/jobs/${job.job_id}`} className="text-sm text-gray-600 hover:text-gray-900">
-        ← {job.title}
+      <Link href={`/hr/jobs/${app.job_id}`} className="text-sm text-gray-600 hover:text-gray-900">
+        ← {app.job_title ?? `ตำแหน่ง #${app.job_id}`}
       </Link>
-      <h1 className="text-xl font-semibold">{user.full_name}</h1>
+      <h1 className="text-xl font-semibold">{app.applicant_name ?? `ผู้สมัคร #${app.user_id}`}</h1>
       <StatusBar value={app.status} onChange={busy ? undefined : (s) => save({ status: s, note: noteValue })} />
       <ErrorText message={error} />
 
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div><dt className="text-gray-500">อีเมล</dt><dd className="break-all">{user.email}</dd></div>
-          <div><dt className="text-gray-500">เบอร์โทร</dt><dd>{user.phone}</dd></div>
-          <div><dt className="text-gray-500">ตำแหน่ง</dt><dd>{job.title}</dd></div>
+          <div><dt className="text-gray-500">อีเมล</dt><dd className="break-all">{app.applicant_email}</dd></div>
+          <div><dt className="text-gray-500">เบอร์โทร</dt><dd>{app.applicant_phone}</dd></div>
+          <div><dt className="text-gray-500">ตำแหน่ง</dt><dd>{app.job_title ?? `#${app.job_id}`}</dd></div>
           <div><dt className="text-gray-500">วันที่สมัคร</dt><dd>{thDate(app.apply_date)}</dd></div>
         </dl>
         <label className="block text-sm text-gray-500">

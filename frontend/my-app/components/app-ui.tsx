@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { LogOut } from "lucide-react"
-import { logout, useUser } from "@/lib/api"
+import { api, logout, useUser } from "@/lib/api"
 import { APP_STATUSES, APP_STATUS_LABEL, type AppStatus, type Role } from "@/lib/types"
 
 export const inputClass =
@@ -75,6 +75,7 @@ export function RoleGate({ role, links, children }: { role: Role; links: NavLink
           <button
             type="button"
             onClick={() => {
+              api("/logout", { method: "POST" }).catch(() => {})
               logout()
               router.replace("/")
             }}

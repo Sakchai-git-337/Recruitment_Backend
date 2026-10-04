@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Lock, Mail } from "lucide-react"
-import { api, ApiError, setUser } from "@/lib/api"
+import { api, ApiError, setSession } from "@/lib/api"
 import type { User } from "@/lib/types"
 import { ErrorText } from "@/components/app-ui"
 
@@ -32,14 +32,13 @@ const SignIn2 = () => {
     setError("")
     setBusy(true)
     try {
-      const user = await api<User>("/login", { method: "POST", body: { email, password } })
-      setUser(user)
+      const { token, user } = await api<{ token: string; user: User }>("/login", { method: "POST", body: { email, password } })
+      setSession(token, user)
       router.replace(user.role === "recruitment" ? "/hr/jobs" : "/jobs")
     } catch (e) {
       const status = e instanceof ApiError ? e.status : -1
       setError(
-        status === 404 ? "ระบบเข้าสู่ระบบยังไม่พร้อม (backend ยังไม่มี POST /login)"
-        : status === 401 ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+        status === 401 ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
         : (e as Error).message,
       )
     } finally {
