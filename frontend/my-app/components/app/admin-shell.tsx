@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from "sonner"
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -62,6 +63,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={() => {
               api("/logout", { method: "POST" }).catch(() => {}) // token is read synchronously, before logout() clears it
               logout()
+              toast.success("ออกจากระบบแล้ว")
               router.replace("/login")
             }}
           >

@@ -1,5 +1,6 @@
 "use client"
 
+import { toast } from "sonner"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronDown, FileText, LayoutDashboard, LogOut } from "lucide-react"
@@ -52,6 +53,7 @@ function UserMenu() {
           onClick={() => {
             api("/logout", { method: "POST" }).catch(() => {}) // token is read synchronously, before logout() clears it
             logout()
+            toast.success("ออกจากระบบแล้ว")
             router.replace("/")
           }}
         >

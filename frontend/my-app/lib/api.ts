@@ -32,22 +32,27 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   } catch {
     throw new ApiError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", 0)
   }
-  if (res.status === 401) {
-    clearSession() // keep drafts: the user logs back in and continues
-    if (typeof window !== "undefined" && window.location?.pathname && !window.location.pathname.startsWith("/login")) {
-      const here = window.location.pathname + (window.location.search ?? "")
-      // plain navigation on purpose: api.ts is not a React module and must also drop in-memory state
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.assign("/login?next=" + encodeURIComponent(here))
-    }
-  }
+  if (res.status === 401) onUnauthorized()
   return res
 }
 
-async function json<T>(res: Response): Promise<T> {
-  const data = await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(data?.error ?? `เกิดข้อผิดพลาด (${res.status})`, res.status, typeof data?.field === "string" ? data.field : undefined)
+function onUnauthorized() {
+  clearSession() // keep drafts: the user logs back in and continues
+  if (typeof window !== "undefined" && window.location?.pathname && !window.location.pathname.startsWith("/login")) {
+    const here = window.location.pathname + (window.location.search ?? "")
+    // plain navigation on purpose: api.ts is not a React module and must also drop in-memory state
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/login?next=" + encodeURIComponent(here))
+  }
+}
+
+function parse<T>(status: number, data: { error?: string; field?: unknown } | null): T {
+  if (status < 200 || status >= 300) throw new ApiError(data?.error ?? `เกิดข้อผิดพลาด (${status})`, status, typeof data?.field === "string" ? data.field : undefined)
   return data as T
+}
+
+async function json<T>(res: Response): Promise<T> {
+  return parse<T>(res.status, await res.json().catch(() => null))
 }
 
 export async function api<T>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
@@ -62,9 +67,27 @@ export async function api<T>(path: string, opts: { method?: string; body?: unkno
   )
 }
 
-/** multipart upload: no Content-Type header, the browser sets the boundary */
-export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
-  return json<T>(await send(path, { method: "POST", body: formData }))
+/**
+ * multipart upload: no Content-Type header, the browser sets the boundary.
+ * With onProgress it uses XMLHttpRequest, because fetch cannot report upload progress.
+ */
+export async function apiUpload<T>(path: string, formData: FormData, onProgress?: (percent: number) => void): Promise<T> {
+  if (!onProgress) return json<T>(await send(path, { method: "POST", body: formData }))
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", BASE + path)
+    const tok = getToken()
+    if (tok) xhr.setRequestHeader("Authorization", `Bearer ${tok}`)
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)) }
+    xhr.onerror = () => reject(new ApiError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", 0))
+    xhr.onload = () => {
+      if (xhr.status === 401) onUnauthorized()
+      let data = null
+      try { data = JSON.parse(xhr.responseText) } catch { /* non-JSON body */ }
+      try { resolve(parse<T>(xhr.status, data)) } catch (e) { reject(e) }
+    }
+    xhr.send(formData)
+  })
 }
 
 export async function fetchBlob(path: string): Promise<Blob> {

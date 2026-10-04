@@ -15,6 +15,7 @@ import {
   type ApplicationForm, type Errors,
 } from "@/lib/application-form"
 import { DOC_TYPES, type Application, type Job } from "@/lib/types"
+import { formatBytes } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { stepForError } from "@/lib/application-errors"
 import { FieldGrid } from "./step-fields"
@@ -76,6 +77,10 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
   const [maxStep, setMaxStep] = useState(1)
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+  const [uploadPct, setUploadPct] = useState<number | null>(null)
+  const allFiles = Object.values(files).flat()
+  const fileCount = allFiles.length
+  const totalBytes = allFiles.reduce((n, f) => n + f.size, 0)
 
   useEffect(() => {
     if (user === undefined) return // session not read yet
@@ -152,8 +157,9 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     fd.append("form", JSON.stringify(form))
     for (const [type, list] of Object.entries(files)) for (const f of list) fd.append("doc_" + type, f)
     setSubmitting(true)
+    setUploadPct(0)
     try {
-      await apiUpload("/applications", fd)
+      await apiUpload("/applications", fd, setUploadPct)
       try { localStorage.removeItem(dkey) } catch { /* nothing stored */ }
       setPhase("done")
       window.scrollTo({ top: 0 })
@@ -173,6 +179,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
       }
     } finally {
       setSubmitting(false)
+      setUploadPct(null)
     }
   }
 
@@ -259,6 +266,17 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
                 </>
               )}
             </div>
+            {submitting && uploadPct !== null && (
+              <div role="status" aria-live="polite" className="border-t bg-indigo-50/60 px-5 py-4 sm:px-6">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-900">
+                    {uploadPct < 100 ? `กำลังอัปโหลดเอกสาร (${fileCount} ไฟล์ · ${formatBytes(totalBytes)})` : "อัปโหลดครบแล้ว กำลังบันทึกใบสมัคร…"}
+                  </span>
+                  <span className="tabular-nums text-indigo-700">{uploadPct}%</span>
+                </div>
+                <Progress value={uploadPct} aria-label="ความคืบหน้าการอัปโหลด" />
+              </div>
+            )}
             <footer className="flex items-center justify-between gap-3 border-t bg-slate-50/60 px-5 py-4 sm:px-6">
               <Button type="button" variant="outline" disabled={step === 1 || submitting} onClick={() => goto(step - 1)}>
                 <ArrowLeft className="size-4" /> ย้อนกลับ

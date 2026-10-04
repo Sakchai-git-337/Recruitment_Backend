@@ -28,6 +28,7 @@ function LoginForm() {
     try {
       const res = await api<{ token: string; user: User }>("/login", { method: "POST", body: { email: email.trim(), password } })
       setSession(res.token, res.user)
+      toast.success(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${res.user.full_name}`)
       router.replace(res.user.role === "recruitment" ? "/admin" : (next ?? "/me/applications"))
     } catch (err) {
       const msg = err instanceof Error ? err.message : "เข้าสู่ระบบไม่สำเร็จ"

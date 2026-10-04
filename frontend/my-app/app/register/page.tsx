@@ -44,7 +44,7 @@ function RegisterForm() {
       await api("/users", { method: "POST", body: { full_name: v.full_name.trim(), email, phone: v.phone.trim(), password: v.password } })
       const res = await api<{ token: string; user: User }>("/login", { method: "POST", body: { email, password: v.password } })
       setSession(res.token, res.user)
-      toast.success("สมัครสมาชิกสำเร็จ")
+      toast.success(`สมัครสมาชิกสำเร็จ ยินดีต้อนรับ ${res.user.full_name}`)
       router.replace(next ?? "/me/applications")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "สมัครสมาชิกไม่สำเร็จ")
