@@ -22,11 +22,11 @@ const SignIn2 = () => {
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
-      setError("Please enter both email and password.")
+      setError("กรุณากรอกอีเมลและรหัสผ่าน")
       return
     }
     if (!validateEmail(email)) {
-      setError("Please enter a valid email address.")
+      setError("รูปแบบอีเมลไม่ถูกต้อง")
       return
     }
     setError("")

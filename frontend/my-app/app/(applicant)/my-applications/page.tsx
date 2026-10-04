@@ -57,7 +57,7 @@ export default function MyApplicationsPage() {
               <StatusBar value={a.status} />
               {meets.map((i) => (
                 <p key={i.interview_id} className="text-sm text-amber-700">
-                  นัดสัมภาษณ์ {new Date(i.interview_date).toLocaleDateString("th-TH")} เวลา {i.interview_time.slice(0, 5)}
+                  นัดสัมภาษณ์ {new Date(i.interview_date + "T00:00").toLocaleDateString("th-TH")} เวลา {i.interview_time.slice(0, 5)}
                 </p>
               ))}
             </div>

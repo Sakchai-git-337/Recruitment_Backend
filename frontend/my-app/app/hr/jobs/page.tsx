@@ -97,7 +97,7 @@ export default function HrJobsPage() {
       <ErrorText message={error} />
 
       {editing && (
-        <form onSubmit={save} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+        <form onSubmit={save} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <label className="block text-sm">
             ชื่อตำแหน่ง
             <input required className={inputClass} value={form.title} onChange={set("title")} />
@@ -136,13 +136,15 @@ export default function HrJobsPage() {
       )}
 
       {jobs.length === 0 ? (
+        error ? null : (
         <p className="text-sm text-gray-500">ยังไม่มีตำแหน่งงาน</p>
+        )
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {jobs.map((job) => {
             const counts = countByStatus(apps.filter((a) => a.job_id === job.job_id))
             return (
-              <div key={job.job_id} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+              <div key={job.job_id} className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link href={`/hr/jobs/${job.job_id}`} className="font-medium break-words hover:underline">

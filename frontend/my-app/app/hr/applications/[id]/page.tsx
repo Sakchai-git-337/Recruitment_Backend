@@ -101,7 +101,7 @@ function InterviewRow({ i, run, busy }: { i: Interview; run: Run; busy: boolean 
 }
 
 function WorkTestRow({ w, run, busy }: { w: WorkTest; run: Run; busy: boolean }) {
-  const [result, setResult] = useState(w.test_result as Result)
+  const [result, setResult] = useState((w.test_result || "pending") as Result)
   const [note, setNote] = useState(w.test_note)
   return (
     <div className={rowClass}>
@@ -248,7 +248,7 @@ export default function ApplicationDetailPage() {
         ← {job.title}
       </Link>
       <h1 className="text-xl font-semibold">{user.full_name}</h1>
-      <StatusBar value={app.status} onChange={busy ? undefined : (s) => save({ status: s, note: app.note })} />
+      <StatusBar value={app.status} onChange={busy ? undefined : (s) => save({ status: s, note: noteValue })} />
       <ErrorText message={error} />
 
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
