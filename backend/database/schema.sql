@@ -69,3 +69,23 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS applications_user_job_uniq ON applications(user_id, job_id);
+
+CREATE TABLE IF NOT EXISTS application_forms (
+  application_id INT PRIMARY KEY REFERENCES applications(application_id) ON DELETE CASCADE,
+  data JSONB NOT NULL,
+  consent_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS application_documents (
+  document_id SERIAL PRIMARY KEY,
+  application_id INT NOT NULL REFERENCES applications(application_id) ON DELETE CASCADE,
+  doc_type TEXT NOT NULL,
+  filename TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  size_bytes INT NOT NULL,
+  data BYTEA NOT NULL,
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS application_documents_app_idx ON application_documents(application_id);

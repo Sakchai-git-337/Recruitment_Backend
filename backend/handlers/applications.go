@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mime"
 	"net/http"
 	"strconv"
 
@@ -46,7 +47,40 @@ func validApplicationStatus(s string) bool {
 	return false
 }
 
+// checkJobOpen responds and returns false when the job is missing, closed or past its closing date.
+func checkJobOpen(c *gin.Context, jobID int) bool {
+	var jobStatus string
+	var expired bool
+	err := database.DB.QueryRow(
+		context.Background(),
+		"SELECT status, COALESCE(closing_date < current_date, false) FROM jobs WHERE job_id = $1",
+		jobID,
+	).Scan(&jobStatus, &expired)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			httperr.Respond(c, http.StatusNotFound, "ไม่พบตำแหน่งงาน")
+			return false
+		}
+		httperr.RespondDB(c, err)
+		return false
+	}
+	if jobStatus == "closed" || expired {
+		httperr.Respond(c, http.StatusBadRequest, "ตำแหน่งนี้ปิดรับสมัครแล้ว")
+		return false
+	}
+	return true
+}
+
 func CreateApplication(c *gin.Context) {
+	if !middleware.IsHR(c) {
+		if mt, _, _ := mime.ParseMediaType(c.GetHeader("Content-Type")); mt == "multipart/form-data" {
+			createApplicationMultipart(c)
+		} else {
+			httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกใบสมัคร")
+		}
+		return
+	}
+
 	var app models.Application
 
 	if err := c.ShouldBindJSON(&app); err != nil {
@@ -59,46 +93,25 @@ func CreateApplication(c *gin.Context) {
 		return
 	}
 
-	if middleware.IsHR(c) {
-		if app.UserID == 0 {
-			httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ user_id")
-			return
-		}
-		if app.Status == "" {
-			app.Status = "pending"
-		}
-		if !validApplicationStatus(app.Status) {
-			httperr.Respond(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
-			return
-		}
-	} else {
-		app.UserID = middleware.CurrentUser(c).UserID
-		app.Status = "pending"
-		app.Note = ""
-	}
-
-	var jobStatus string
-	var expired bool
-	err := database.DB.QueryRow(
-		context.Background(),
-		"SELECT status, COALESCE(closing_date < current_date, false) FROM jobs WHERE job_id = $1",
-		app.JobID,
-	).Scan(&jobStatus, &expired)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			httperr.Respond(c, http.StatusNotFound, "ไม่พบตำแหน่งงาน")
-			return
-		}
-		httperr.RespondDB(c, err)
+	// HR-only path (applicants go through createApplicationMultipart)
+	if app.UserID == 0 {
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ user_id")
 		return
 	}
-	if jobStatus == "closed" || expired {
-		httperr.Respond(c, http.StatusBadRequest, "ตำแหน่งนี้ปิดรับสมัครแล้ว")
+	if app.Status == "" {
+		app.Status = "pending"
+	}
+	if !validApplicationStatus(app.Status) {
+		httperr.Respond(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
+		return
+	}
+
+	if !checkJobOpen(c, app.JobID) {
 		return
 	}
 
 	var id int
-	err = database.DB.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		INSERT INTO applications (user_id, job_id, status, note)
@@ -129,10 +142,6 @@ func CreateApplication(c *gin.Context) {
 		httperr.RespondDB(c, err)
 		return
 	}
-	if !middleware.IsHR(c) {
-		app.Note = ""
-	}
-
 	c.JSON(http.StatusCreated, app)
 }
 

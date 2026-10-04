@@ -123,12 +123,12 @@ func TestApplyAfterClosingDate(t *testing.T) {
 	ap := loginToken(t, r, "a@x.com", "pw")
 	yday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	doJSON(t, r, "POST", "/jobs", hr, jobBody(map[string]any{"closing_date": yday}))
-	if w := doJSON(t, r, "POST", "/applications", ap, map[string]any{"job_id": 1}); w.Code != 400 {
+	if w := submit(t, r, ap, 1, validForm(), goodFiles()); w.Code != 400 {
 		t.Fatalf("expired: %d %s", w.Code, w.Body.String())
 	}
 	// today is still open
 	doJSON(t, r, "PATCH", "/jobs/1", hr, map[string]any{"closing_date": time.Now().Format("2006-01-02")})
-	if w := doJSON(t, r, "POST", "/applications", ap, map[string]any{"job_id": 1}); w.Code != 201 {
+	if w := submit(t, r, ap, 1, validForm(), goodFiles()); w.Code != 201 {
 		t.Fatalf("today: %d %s", w.Code, w.Body.String())
 	}
 }

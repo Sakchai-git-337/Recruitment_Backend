@@ -65,8 +65,7 @@ func TestJobsAndApplications(t *testing.T) {
 	}
 
 	// apply with spoofed fields
-	w = doJSON(t, r, "POST", "/applications", ta, map[string]any{
-		"job_id": job.JobID, "user_id": b.UserID, "status": "passed", "note": "x"})
+	w = submit(t, r, ta, job.JobID, validForm(), goodFiles())
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -80,7 +79,7 @@ func TestJobsAndApplications(t *testing.T) {
 		t.Fatalf("%+v", app)
 	}
 	// twice -> 409
-	w = doJSON(t, r, "POST", "/applications", ta, map[string]any{"job_id": job.JobID})
+	w = submit(t, r, ta, job.JobID, validForm(), goodFiles())
 	if w.Code != 409 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -91,15 +90,15 @@ func TestJobsAndApplications(t *testing.T) {
 		JobID int `json:"job_id"`
 	}
 	dec(t, w.Body.Bytes(), &cj)
-	if w = doJSON(t, r, "POST", "/applications", ta, map[string]any{"job_id": cj.JobID}); w.Code != 400 {
+	if w = submit(t, r, ta, cj.JobID, validForm(), goodFiles()); w.Code != 400 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w = doJSON(t, r, "POST", "/applications", ta, map[string]any{"job_id": 99999}); w.Code != 404 {
+	if w = submit(t, r, ta, 99999, validForm(), goodFiles()); w.Code != 404 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 
 	// Bob applies too, HR sets a note
-	w = doJSON(t, r, "POST", "/applications", tb, map[string]any{"job_id": job.JobID})
+	w = submit(t, r, tb, job.JobID, validForm(), goodFiles())
 	var bapp struct {
 		ApplicationID int `json:"application_id"`
 	}

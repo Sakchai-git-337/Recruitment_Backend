@@ -36,6 +36,10 @@ func Setup() *gin.Engine {
 	auth.GET("/applications", handlers.GetApplications)
 	auth.GET("/applications/:id", handlers.GetApplicationByID)
 	auth.POST("/applications", handlers.CreateApplication)
+	auth.GET("/applications/:id/form", handlers.GetApplicationForm)
+	auth.GET("/applications/:id/documents", handlers.GetApplicationDocuments)
+	auth.GET("/documents/:id", handlers.GetDocument)
+	auth.GET("/me/application-form", handlers.GetMyApplicationForm)
 	auth.GET("/interviews", handlers.GetInterviews)
 	auth.GET("/interviews/:id", handlers.GetInterviewByID)
 
