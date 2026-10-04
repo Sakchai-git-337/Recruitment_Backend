@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Briefcase, FileText, LayoutDashboard, LogOut, Menu, UserCog, type LucideIcon } from "lucide-react"
-import { logout, useUser } from "@/lib/api"
+import { api, logout, useUser } from "@/lib/api"
 import { initials } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -60,8 +60,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Button
             variant="ghost" size="icon" aria-label="ออกจากระบบ" title="ออกจากระบบ"
             onClick={() => {
+              api("/logout", { method: "POST" }).catch(() => {}) // token is read synchronously, before logout() clears it
               logout()
-              router.push("/login")
+              router.replace("/login")
             }}
           >
             <LogOut className="size-4 text-slate-500" />

@@ -1,31 +1,7 @@
-import { SECTIONS, computeAge, optionLabel, type ApplicationForm, type Field, type Row } from "@/lib/application-form"
-import { formatDate, formatMoney } from "@/lib/format"
+import { SECTIONS, type ApplicationForm, type Field, type Row } from "@/lib/application-form"
+import { asForm, asRow, display, isEmpty, isRow } from "@/lib/form-display"
+import { formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
-
-const isEmpty = (v: unknown) => v == null || v === "" || (Array.isArray(v) && v.length === 0)
-
-function formatMonth(v: string) {
-  const d = new Date(v + "-01T00:00")
-  return isNaN(d.getTime()) ? v : d.toLocaleDateString("th-TH", { month: "short", year: "numeric" })
-}
-
-function display(f: Field, v: unknown): string {
-  switch (f.type) {
-    case "enum": return optionLabel(f, v)
-    case "bool": return v ? (f.yesNo?.[0] ?? "ใช่") : (f.yesNo?.[1] ?? "ไม่ใช่")
-    case "date": {
-      const age = f.key === "date_of_birth" ? computeAge(String(v)) : null
-      return formatDate(String(v)) + (age != null ? ` (อายุ ${age} ปี)` : "")
-    }
-    case "month": return formatMonth(String(v))
-    case "number": {
-      const n = Number(v)
-      const money = f.unit === "บาท" ? formatMoney(n) : n.toLocaleString("en-US")
-      return f.unit && f.unit !== "บาท" ? `${money} ${f.unit}` : money
-    }
-    default: return String(v)
-  }
-}
 
 function Item({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   return (
@@ -36,7 +12,8 @@ function Item({ label, children, wide }: { label: string; children: React.ReactN
   )
 }
 
-function ListTable({ f, rows }: { f: Field; rows: Row[] }) {
+function ListTable({ f, all }: { f: Field; all: unknown[] }) {
+  const rows: Row[] = all.filter(isRow)
   const cols = (f.fields ?? []).filter((c) => rows.some((r) => !isEmpty(r[c.key])))
   if (cols.length === 0) return null
   return (
@@ -69,10 +46,10 @@ function Fields({ fields, data, form }: { fields: Field[]; data: Row; form: Appl
     <>
       {fields.map((f) => {
         if (f.showIf && !f.showIf(form)) return null
-        const v = data?.[f.key]
-        if (f.type === "list") return Array.isArray(v) ? <ListTable key={f.key} f={f} rows={v as Row[]} /> : null
+        const v = asRow(data)[f.key]
+        if (f.type === "list") return Array.isArray(v) ? <ListTable key={f.key} f={f} all={v} /> : null
         if (f.type === "group") {
-          const g = (v ?? {}) as Row
+          const g = asRow(v)
           if (!(f.fields ?? []).some((c) => !isEmpty(g[c.key]))) return null
           return (
             <div key={f.key} className="sm:col-span-2 lg:col-span-3">
@@ -91,7 +68,8 @@ function Fields({ fields, data, form }: { fields: Field[]; data: Row; form: Appl
 }
 
 /** read-only render of a submitted application form (spec 6), driven by SECTIONS. Empty optional fields are hidden. */
-export function FormViewer({ data, consentAt, className }: { data: ApplicationForm; consentAt?: string; className?: string }) {
+export function FormViewer({ data: raw, consentAt, className }: { data: ApplicationForm; consentAt?: string; className?: string }) {
+  const data = asForm(raw)
   return (
     <div className={cn("space-y-4", className)}>
       {SECTIONS.map((s) => (

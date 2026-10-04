@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronDown, FileText, LayoutDashboard, LogOut } from "lucide-react"
-import { logout, useUser } from "@/lib/api"
+import { api, logout, useUser } from "@/lib/api"
 import { initials } from "@/lib/format"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -50,8 +50,9 @@ function UserMenu() {
         )}
         <DropdownMenuItem
           onClick={() => {
+            api("/logout", { method: "POST" }).catch(() => {}) // token is read synchronously, before logout() clears it
             logout()
-            router.push("/")
+            router.replace("/")
           }}
         >
           <LogOut /> ออกจากระบบ

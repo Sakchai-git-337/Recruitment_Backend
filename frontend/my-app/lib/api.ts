@@ -71,10 +71,18 @@ export async function fetchBlob(path: string): Promise<Blob> {
 
 /** open a stored document in a new tab (blob URL, revoked after 60 s) */
 export async function openDocument(id: number, filename: string): Promise<void> {
-  const blob = await fetchBlob(`/documents/${id}`)
-  const url = URL.createObjectURL(blob)
-  const w = window.open(url, "_blank")
-  if (!w) {
+  // open the tab synchronously (inside the click) so popup blockers allow it, then point it at the blob
+  const w = window.open("", "_blank")
+  let url: string
+  try {
+    url = URL.createObjectURL(await fetchBlob(`/documents/${id}`))
+  } catch (e) {
+    w?.close()
+    throw e
+  }
+  if (w) {
+    w.location.href = url
+  } else {
     // popup blocked: fall back to a download
     const a = document.createElement("a")
     a.href = url
