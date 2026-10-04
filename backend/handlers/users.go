@@ -118,12 +118,18 @@ func GetUserByID(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func CreateUser(c *gin.Context) {
+func CreateUser(c *gin.Context) { createUser(c, false) }
+
+// AdminCreateUser lets HR create a user with role applicant|recruitment.
+func AdminCreateUser(c *gin.Context) { createUser(c, true) }
+
+func createUser(c *gin.Context, admin bool) {
 	var in struct {
 		FullName string `json:"full_name"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 		Phone    string `json:"phone"`
+		Role     string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&in); err != nil {
 		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
@@ -132,6 +138,14 @@ func CreateUser(c *gin.Context) {
 	if in.FullName == "" || in.Email == "" || in.Password == "" || in.Phone == "" {
 		httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
+	}
+	role := "applicant" // public signup is always applicant
+	if admin {
+		role = in.Role
+		if role != "applicant" && role != "recruitment" {
+			httperr.Respond(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
+			return
+		}
 	}
 	if len(in.Password) > 72 {
 		httperr.Respond(c, http.StatusBadRequest, "รหัสผ่านยาวเกินไป")
@@ -143,13 +157,12 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// role ถูกบังคับเป็น applicant เสมอ
-	user := models.User{FullName: in.FullName, Email: in.Email, Phone: in.Phone, Role: "applicant"}
+	user := models.User{FullName: in.FullName, Email: in.Email, Phone: in.Phone, Role: role}
 	err = database.DB.QueryRow(
 		context.Background(),
 		`INSERT INTO users (full_name, email, password, phone, role)
-		 VALUES ($1, $2, $3, $4, 'applicant') RETURNING user_id`,
-		in.FullName, in.Email, hash, in.Phone,
+		 VALUES ($1, $2, $3, $4, $5) RETURNING user_id`,
+		in.FullName, in.Email, hash, in.Phone, role,
 	).Scan(&user.UserID)
 	if err != nil {
 		if httperr.IsUniqueViolation(err) {
@@ -165,6 +178,10 @@ func CreateUser(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	id, ok := httperr.ParseID(c)
 	if !ok {
+		return
+	}
+	if middleware.CurrentUser(c).UserID == id {
+		httperr.Respond(c, http.StatusBadRequest, "ไม่สามารถลบบัญชีของตัวเองได้")
 		return
 	}
 
@@ -209,6 +226,11 @@ func UpdateUser(c *gin.Context) {
 
 	if !middleware.IsHR(c) && (middleware.CurrentUser(c).UserID != id || data.Role != nil) {
 		httperr.Respond(c, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	if data.Role != nil && middleware.CurrentUser(c).UserID == id {
+		httperr.Respond(c, http.StatusBadRequest, "ไม่สามารถเปลี่ยนสิทธิ์ของตัวเองได้")
 		return
 	}
 

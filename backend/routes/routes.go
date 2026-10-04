@@ -41,6 +41,7 @@ func Setup() *gin.Engine {
 
 	hr := auth.Group("/", middleware.RequireRole("recruitment"))
 	hr.GET("/users", handlers.GetUsers)
+	hr.POST("/admin/users", handlers.AdminCreateUser)
 	hr.DELETE("/users/:id", handlers.DeleteUser)
 	hr.POST("/jobs", handlers.CreateJob)
 	hr.PATCH("/jobs/:id", handlers.UpdateJob)

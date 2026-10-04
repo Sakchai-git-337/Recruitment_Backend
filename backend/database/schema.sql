@@ -17,6 +17,13 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_by  INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS department TEXT NOT NULL DEFAULT '';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS employment_type TEXT NOT NULL DEFAULT 'full_time' CHECK (employment_type IN ('full_time','part_time','contract','internship'));
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_min INT NULL CHECK (salary_min >= 0);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_max INT NULL CHECK (salary_max >= 0);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headcount INT NOT NULL DEFAULT 1 CHECK (headcount >= 1);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS closing_date DATE NULL;
+
 CREATE TABLE IF NOT EXISTS applications (
   application_id SERIAL PRIMARY KEY,
   user_id    INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,

@@ -78,11 +78,12 @@ func CreateApplication(c *gin.Context) {
 	}
 
 	var jobStatus string
+	var expired bool
 	err := database.DB.QueryRow(
 		context.Background(),
-		"SELECT status FROM jobs WHERE job_id = $1",
+		"SELECT status, COALESCE(closing_date < current_date, false) FROM jobs WHERE job_id = $1",
 		app.JobID,
-	).Scan(&jobStatus)
+	).Scan(&jobStatus, &expired)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			httperr.Respond(c, http.StatusNotFound, "ไม่พบตำแหน่งงาน")
@@ -91,7 +92,7 @@ func CreateApplication(c *gin.Context) {
 		httperr.RespondDB(c, err)
 		return
 	}
-	if jobStatus == "closed" {
+	if jobStatus == "closed" || expired {
 		httperr.Respond(c, http.StatusBadRequest, "ตำแหน่งนี้ปิดรับสมัครแล้ว")
 		return
 	}
