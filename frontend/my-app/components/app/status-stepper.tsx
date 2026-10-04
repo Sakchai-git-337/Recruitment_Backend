@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 import { APP_STATUS_LABEL, type AppStatus } from "@/lib/types"
 
 const FLOW: AppStatus[] = ["pending", "screening", "interview", "passed"]
-type State = "done" | "current" | "todo" | "rejected"
+type State = "done" | "current" | "todo" | "rejected" | "passed"
 
 function Step({
   state, label, status, current, icon, line, lineDone, onClick,
@@ -26,11 +26,12 @@ function Step({
           state === "current" && "border-indigo-600 bg-white text-indigo-600 ring-4 ring-indigo-100",
           state === "todo" && "border-slate-200 bg-white text-slate-400",
           state === "rejected" && "border-red-600 bg-red-600 text-white ring-4 ring-red-100",
+          state === "passed" && "border-green-600 bg-green-600 text-white ring-4 ring-green-100",
         )}
       >
         {icon}
       </span>
-      <span className={cn("mt-2 text-xs font-medium", state === "todo" ? "text-slate-400" : state === "rejected" ? "text-red-700" : "text-slate-900")}>
+      <span className={cn("mt-2 text-xs font-medium", state === "todo" ? "text-slate-400" : state === "rejected" ? "text-red-700" : state === "passed" ? "text-green-700" : "text-slate-900")}>
         {label}
       </span>
     </>
@@ -71,11 +72,12 @@ export function StatusStepper({
   return (
     <ol className={cn("flex w-full items-start", className)}>
       {FLOW.map((s, i) => {
-        const state: State = rejected ? "todo" : i < cur ? "done" : i === cur ? "current" : "todo"
+        // "passed" is a terminal state like "rejected": green check instead of the in-progress ring
+        const state: State = rejected ? "todo" : i < cur ? "done" : i === cur ? (s === "passed" ? "passed" : "current") : "todo"
         return (
           <Step
             key={s} state={state} label={APP_STATUS_LABEL[s]} status={s} current={status} onClick={click}
-            icon={state === "done" ? <Check className="size-4" /> : i + 1}
+            icon={state === "done" || state === "passed" ? <Check className="size-4" /> : i + 1}
             line={showRejected || i < FLOW.length - 1}
             lineDone={!rejected && i < cur}
           />
