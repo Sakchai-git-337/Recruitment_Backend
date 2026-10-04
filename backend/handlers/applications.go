@@ -53,7 +53,7 @@ func checkJobOpen(c *gin.Context, jobID int) bool {
 	var expired bool
 	err := database.DB.QueryRow(
 		context.Background(),
-		"SELECT status, COALESCE(closing_date < current_date, false) FROM jobs WHERE job_id = $1",
+		"SELECT status, COALESCE(closing_date < (now() AT TIME ZONE 'Asia/Bangkok')::date, false) FROM jobs WHERE job_id = $1",
 		jobID,
 	).Scan(&jobStatus, &expired)
 	if err != nil {

@@ -73,26 +73,52 @@ func stripSpace(s string) string {
 	}, s)
 }
 
-// validateForm returns a Thai error message naming the offending key, or "".
-func validateForm(f map[string]any) string {
-	missing := func(k string) string { return "กรุณากรอก " + k }
+// formLabels are the Thai labels (spec 6) of the required keys.
+var formLabels = map[string]string{
+	"title_th": "คำนำหน้า (ไทย)", "first_name_th": "ชื่อ (ไทย)", "last_name_th": "นามสกุล (ไทย)",
+	"date_of_birth": "วันเกิด", "present_address": "ที่อยู่ปัจจุบัน", "present_province": "จังหวัด",
+	"mobile_phone": "เบอร์โทรศัพท์มือถือ", "email": "อีเมล", "relevant_skills": "ทักษะที่เกี่ยวข้องกับตำแหน่ง",
+	"signature_name": "ลงชื่อ", "expected_salary": "เงินเดือนที่คาดหวัง", "available_start_date": "วันที่เริ่มงานได้",
+	"has_work_experience": "มีประสบการณ์ทำงานหรือไม่", "years_of_experience": "จำนวนปีที่มีประสบการณ์",
+	"education": "ประวัติการศึกษา", "pdpa_consent": "ยินยอมให้เก็บและใช้ข้อมูลส่วนบุคคล (PDPA)",
+}
+
+var educationLabels = map[string]string{
+	"level": "ระดับการศึกษา", "institute": "สถาบัน", "year_to": "ปีที่จบ", "degree": "วุฒิการศึกษา", "major": "คณะ/สาขา",
+}
+
+var docLabels = map[string]string{"resume": "Resume / CV", "education": "เอกสารวุฒิการศึกษา / Transcript"}
+
+// validateForm returns a Thai error message and the offending key path
+// (e.g. "first_name_th", "education.0.level"); both are "" when valid.
+func validateForm(f map[string]any) (msg, field string) {
+	missing := func(k string) (string, string) { return "กรุณากรอก " + formLabels[k], k }
 	for _, k := range []string{"title_th", "first_name_th", "last_name_th", "date_of_birth",
 		"present_address", "present_province", "mobile_phone", "email", "relevant_skills", "signature_name"} {
 		if str(f, k) == "" {
 			return missing(k)
 		}
 	}
-	if !isDate(str(f, "date_of_birth")) {
-		return "date_of_birth ไม่ถูกต้อง"
+	year := time.Now().Year()
+	dob, err := time.Parse("2006-01-02", str(f, "date_of_birth"))
+	if err != nil {
+		return formLabels["date_of_birth"] + " ไม่ถูกต้อง", "date_of_birth"
 	}
-	if !isDate(str(f, "available_start_date")) {
+	if dob.Year() < 1900 || dob.Year() > year {
+		return "ปีเกิดต้องเป็น ค.ศ.", "date_of_birth"
+	}
+	start, err := time.Parse("2006-01-02", str(f, "available_start_date"))
+	if err != nil {
 		return missing("available_start_date")
+	}
+	if start.Year() < 1900 || start.Year() > year+5 {
+		return formLabels["available_start_date"] + " ไม่ถูกต้อง (ต้องเป็น ค.ศ.)", "available_start_date"
 	}
 	if n, ok := f["expected_salary"].(float64); !ok || n <= 0 {
 		return missing("expected_salary")
 	}
-	if !phoneRE.MatchString(str(f, "mobile_phone")) {
-		return "mobile_phone ไม่ถูกต้อง"
+	if !phoneRE.MatchString(strings.NewReplacer(" ", "", "-", "").Replace(str(f, "mobile_phone"))) {
+		return formLabels["mobile_phone"] + " ไม่ถูกต้อง", "mobile_phone"
 	}
 	if _, ok := f["has_work_experience"].(bool); !ok {
 		return missing("has_work_experience")
@@ -104,21 +130,28 @@ func validateForm(f map[string]any) string {
 	if len(edu) == 0 {
 		return missing("education")
 	}
-	for _, it := range edu {
+	for i, it := range edu {
 		m, _ := it.(map[string]any)
-		_, yearOK := m["year_to"].(float64)
-		if !educationLevels[str(m, "level")] || str(m, "institute") == "" || !yearOK ||
-			str(m, "degree") == "" || str(m, "major") == "" {
-			return "education: กรุณากรอก level, institute, year_to, degree, major ให้ครบ"
+		for _, k := range []string{"level", "institute", "year_to", "degree", "major"} {
+			ok := str(m, k) != ""
+			if k == "level" {
+				ok = educationLevels[str(m, k)]
+			} else if k == "year_to" {
+				_, ok = m[k].(float64)
+			}
+			if !ok {
+				return fmt.Sprintf("%s แถวที่ %d: กรุณากรอก %s", formLabels["education"], i+1, educationLabels[k]),
+					fmt.Sprintf("education.%d.%s", i, k)
+			}
 		}
 	}
 	if f["pdpa_consent"] != true {
-		return "ต้องยอมรับ pdpa_consent"
+		return "ต้องยอมรับ " + formLabels["pdpa_consent"], "pdpa_consent"
 	}
 	if stripSpace(str(f, "signature_name")) != stripSpace(str(f, "first_name_th")+str(f, "last_name_th")) {
-		return "signature_name ต้องตรงกับชื่อ-นามสกุล"
+		return formLabels["signature_name"] + " ต้องตรงกับชื่อ-นามสกุล", "signature_name"
 	}
-	return ""
+	return "", ""
 }
 
 func sanitizeFilename(name string) string {
@@ -172,8 +205,8 @@ func createApplicationMultipart(c *gin.Context) {
 		bad("ข้อมูลใบสมัครไม่ถูกต้อง")
 		return
 	}
-	if msg := validateForm(form); msg != "" {
-		bad(msg)
+	if msg, field := validateForm(form); msg != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": msg, "field": field})
 		return
 	}
 
@@ -225,7 +258,7 @@ func createApplicationMultipart(c *gin.Context) {
 	}
 	for _, dt := range requiredDocs {
 		if have[dt] == 0 {
-			bad("กรุณาอัปโหลดเอกสาร doc_" + dt)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "กรุณาอัปโหลดเอกสาร " + docLabels[dt], "field": "doc_" + dt})
 			return
 		}
 	}

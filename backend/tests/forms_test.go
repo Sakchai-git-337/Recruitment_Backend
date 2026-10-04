@@ -192,13 +192,25 @@ func TestFormSubmitAndRead(t *testing.T) {
 	}
 }
 
+func TestFormPhoneWithDashes(t *testing.T) {
+	e := newFormEnv(t)
+	f := validForm()
+	f["mobile_phone"] = "081-234 5678"
+	if w := submit(t, e.r, e.ta, e.job, f, goodFiles()); w.Code != 201 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+}
+
 func TestFormRejections(t *testing.T) {
 	e := newFormEnv(t)
-	bad := func(name string, form map[string]any, files []tfile, wantMsg string) {
+	bad := func(name string, form map[string]any, files []tfile, wantMsg string, field ...string) {
 		t.Helper()
 		w := submit(t, e.r, e.ta, e.job, form, files)
 		if w.Code != 400 || !strings.Contains(w.Body.String(), wantMsg) {
 			t.Fatalf("%s: %d %s", name, w.Code, w.Body.String())
+		}
+		if len(field) > 0 && !strings.Contains(w.Body.String(), `"field":"`+field[0]+`"`) {
+			t.Fatalf("%s: field %s missing: %s", name, field[0], w.Body.String())
 		}
 		if count(t, "applications") != 0 || count(t, "application_forms") != 0 || count(t, "application_documents") != 0 {
 			t.Fatalf("%s: rows inserted", name)
@@ -207,26 +219,42 @@ func TestFormRejections(t *testing.T) {
 
 	f := validForm()
 	delete(f, "first_name_th")
-	bad("missing key", f, goodFiles(), "first_name_th")
+	bad("missing key", f, goodFiles(), "กรุณากรอก ชื่อ (ไทย)", "first_name_th")
 
 	f = validForm()
 	f["pdpa_consent"] = false
-	bad("consent", f, goodFiles(), "pdpa_consent")
+	bad("consent", f, goodFiles(), "PDPA", "pdpa_consent")
 
 	f = validForm()
 	f["signature_name"] = "คนอื่น"
-	bad("signature", f, goodFiles(), "signature_name")
+	bad("signature", f, goodFiles(), "ต้องตรงกับชื่อ-นามสกุล", "signature_name")
 
 	f = validForm()
 	f["education"] = []any{map[string]any{"level": "bachelor"}}
-	bad("education sub", f, goodFiles(), "education")
+	bad("education sub", f, goodFiles(), "ประวัติการศึกษา แถวที่ 1: กรุณากรอก", "education.0.institute")
 
 	f = validForm()
 	f["education"] = []any{}
-	bad("education empty", f, goodFiles(), "education")
+	bad("education empty", f, goodFiles(), "กรุณากรอก ประวัติการศึกษา", "education")
 
-	bad("no education doc", validForm(), goodFiles()[:1], "doc_education")
-	bad("no resume doc", validForm(), goodFiles()[1:], "doc_resume")
+	f = validForm()
+	f["education"] = []any{map[string]any{"institute": "CU", "year_to": 2560, "degree": "x", "major": "y"}}
+	bad("education level", f, goodFiles(), "แถวที่ 1: กรุณากรอก ระดับการศึกษา", "education.0.level")
+
+	f = validForm()
+	f["date_of_birth"] = "2538-05-20"
+	bad("buddhist dob", f, goodFiles(), "ปีเกิดต้องเป็น ค.ศ.", "date_of_birth")
+
+	f = validForm()
+	f["available_start_date"] = "2569-11-01"
+	bad("buddhist start", f, goodFiles(), "ไม่ถูกต้อง", "available_start_date")
+
+	f = validForm()
+	f["mobile_phone"] = "12345"
+	bad("phone", f, goodFiles(), "เบอร์โทรศัพท์มือถือ ไม่ถูกต้อง", "mobile_phone")
+
+	bad("no education doc", validForm(), goodFiles()[:1], "เอกสารวุฒิการศึกษา", "doc_education")
+	bad("no resume doc", validForm(), goodFiles()[1:], "Resume", "doc_resume")
 
 	bad("fake pdf", validForm(), []tfile{{"doc_resume", "cv.pdf", []byte("just some text, not a pdf")}, goodFiles()[1]}, "PDF, JPG หรือ PNG")
 

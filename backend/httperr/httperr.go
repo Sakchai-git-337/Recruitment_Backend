@@ -27,7 +27,7 @@ func RespondDB(c *gin.Context, err error) {
 		case "23505":
 			Respond(c, http.StatusConflict, "ข้อมูลซ้ำ")
 			return
-		case "23503", "23514", "22P02", "22007", "22008":
+		case "23503", "23514", "22P02", "22007", "22008", "22003":
 			Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 			return
 		}

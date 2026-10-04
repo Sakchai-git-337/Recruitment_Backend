@@ -121,13 +121,14 @@ func TestApplyAfterClosingDate(t *testing.T) {
 	seedUser(t, "A", "a@x.com", "pw", "applicant")
 	hr := loginToken(t, r, "hr@x.com", "pw")
 	ap := loginToken(t, r, "a@x.com", "pw")
-	yday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	bkk := time.Now().In(time.FixedZone("ICT", 7*3600))
+	yday := bkk.AddDate(0, 0, -1).Format("2006-01-02")
 	doJSON(t, r, "POST", "/jobs", hr, jobBody(map[string]any{"closing_date": yday}))
 	if w := submit(t, r, ap, 1, validForm(), goodFiles()); w.Code != 400 {
 		t.Fatalf("expired: %d %s", w.Code, w.Body.String())
 	}
 	// today is still open
-	doJSON(t, r, "PATCH", "/jobs/1", hr, map[string]any{"closing_date": time.Now().Format("2006-01-02")})
+	doJSON(t, r, "PATCH", "/jobs/1", hr, map[string]any{"closing_date": bkk.Format("2006-01-02")})
 	if w := submit(t, r, ap, 1, validForm(), goodFiles()); w.Code != 201 {
 		t.Fatalf("today: %d %s", w.Code, w.Body.String())
 	}
@@ -177,7 +178,11 @@ func TestAdminUsers(t *testing.T) {
 		t.Fatalf("self delete: %d", w.Code)
 	}
 	other := fmt.Sprintf("/users/%v", m["user_id"])
-	if w = doJSON(t, r, "DELETE", other, hr, nil); w.Code != 200 {
-		t.Fatalf("delete other: %d", w.Code)
+	if w = doJSON(t, r, "DELETE", other, hr, nil); w.Code != 409 {
+		t.Fatalf("delete HR: %d", w.Code)
+	}
+	apU := seedUser(t, "B", "b@x.com", "pw", "applicant")
+	if w = doJSON(t, r, "DELETE", fmt.Sprintf("/users/%d", apU.UserID), hr, nil); w.Code != 200 {
+		t.Fatalf("delete applicant: %d", w.Code)
 	}
 }

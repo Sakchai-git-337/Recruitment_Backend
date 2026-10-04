@@ -185,6 +185,22 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
+	// jobs/screenings/interviews/work_tests cascade from their HR owner; refuse instead of wiping them.
+	var blocked bool
+	if err := database.DB.QueryRow(context.Background(),
+		`SELECT EXISTS (SELECT 1 FROM users WHERE user_id = $1 AND role = 'recruitment')
+		     OR EXISTS (SELECT 1 FROM jobs WHERE created_by = $1)
+		     OR EXISTS (SELECT 1 FROM screenings WHERE screened_by = $1)
+		     OR EXISTS (SELECT 1 FROM interviews WHERE interviewer_id = $1)
+		     OR EXISTS (SELECT 1 FROM work_tests WHERE assigned_by = $1)`, id).Scan(&blocked); err != nil {
+		httperr.RespondDB(c, err)
+		return
+	}
+	if blocked {
+		httperr.Respond(c, http.StatusConflict, "ไม่สามารถลบผู้ใช้ที่เป็น HR หรือมีข้อมูลตำแหน่งงาน/การคัดเลือกได้ ให้เปลี่ยนสิทธิ์แทน")
+		return
+	}
+
 	result, err := database.DB.Exec(
 		context.Background(),
 		"DELETE FROM users WHERE user_id = $1",
