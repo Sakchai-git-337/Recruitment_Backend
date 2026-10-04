@@ -9,3 +9,6 @@ backend/.env
 /.claude/settings.json
 /.claude/helpers/graft-*
 /.claude/skills/graft/
+
+# agent scratch (reports, review packages, screenshots)
+/.superpowers/
