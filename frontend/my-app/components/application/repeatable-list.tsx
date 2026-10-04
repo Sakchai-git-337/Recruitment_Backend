@@ -20,22 +20,22 @@ export function RepeatableList({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-slate-700">{label}</p>
+        <p className="text-sm font-medium text-foreground/80">{label}</p>
         <Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, makeRow()])}>
           <Plus className="size-4" /> {addLabel}
         </Button>
       </div>
       {rows.length === 0 && (
-        <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-slate-400">ยังไม่มีรายการ</p>
+        <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">ยังไม่มีรายการ</p>
       )}
       {rows.map((row, i) => (
-        <div key={i} className="rounded-lg border bg-slate-50/60 p-4">
+        <div key={i} className="rounded-lg border bg-muted/60 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">รายการที่ {i + 1}</span>
+            <span className="text-xs font-semibold text-muted-foreground">รายการที่ {i + 1}</span>
             {rows.length > minRows && (
               <Button
                 type="button" variant="ghost" size="sm" aria-label={`ลบรายการที่ ${i + 1}`}
-                className="h-7 text-slate-500 hover:text-red-600"
+                className="h-7 text-muted-foreground hover:text-red-600 dark:hover:text-red-400"
                 onClick={() => onChange(rows.filter((_, j) => j !== i))}
               >
                 <Trash2 className="size-4" /> ลบ
@@ -45,7 +45,7 @@ export function RepeatableList({
           {renderRow(row, i, (p) => onChange(rows.map((r, j) => (j === i ? { ...r, ...p } : r))))}
         </div>
       ))}
-      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   )
 }

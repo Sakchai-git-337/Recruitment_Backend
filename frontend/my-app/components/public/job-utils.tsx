@@ -13,7 +13,7 @@ export function isJobOpen(job: Job, now = new Date()): boolean {
 
 export function TypeBadge({ type }: { type: Job["employment_type"] }) {
   return (
-    <Badge variant="secondary" className="bg-indigo-50 text-indigo-700">
+    <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">
       {EMPLOYMENT_TYPE_LABEL[type] ?? type}
     </Badge>
   )
@@ -21,8 +21,8 @@ export function TypeBadge({ type }: { type: Job["employment_type"] }) {
 
 export function MetaItem({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-      <Icon className="size-4 shrink-0 text-slate-400" />
+    <span className="inline-flex items-center gap-1.5 text-sm text-foreground/70">
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <span className="min-w-0">{children}</span>
     </span>
   )

@@ -66,17 +66,17 @@ function Content() {
           action={<Button asChild><Link href="/">ดูตำแหน่งงาน</Link></Button>} />
       ) : (
         <>
-        <div className="mb-4 flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label="กรองตามสถานะ">
+        <div className="mb-4 flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="กรองตามสถานะ">
           {(["all", ...APP_STATUSES] as const).map((t) => (
             <button
               key={t} type="button" role="tab" aria-selected={status === t} onClick={() => setStatus(t)}
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                status === t ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900",
+                status === t ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {t === "all" ? "ทั้งหมด" : APP_STATUS_LABEL[t]}
-              <span className="text-xs text-slate-400 tabular-nums">{t === "all" ? data.apps.length : data.apps.filter((a) => a.status === t).length}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{t === "all" ? data.apps.length : data.apps.filter((a) => a.status === t).length}</span>
             </button>
           ))}
         </div>
@@ -90,23 +90,23 @@ function Content() {
               <li key={a.application_id} className="rounded-xl border bg-card p-5 shadow-xs sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                      <Link href={`/jobs/${a.job_id}`} className="hover:text-indigo-700">{a.job_title ?? `ตำแหน่ง #${a.job_id}`}</Link>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                      <Link href={`/jobs/${a.job_id}`} className="hover:text-indigo-700 dark:hover:text-indigo-300">{a.job_title ?? `ตำแหน่ง #${a.job_id}`}</Link>
                     </h2>
-                    <p className="mt-0.5 text-sm text-slate-500">สมัครเมื่อ {formatDate(a.apply_date)}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">สมัครเมื่อ {formatDate(a.apply_date)}</p>
                   </div>
                   <StatusBadge status={a.status} />
                 </div>
                 <StatusStepper status={a.status} className="mt-6 mb-1" />
                 {showClosedNotice(a) && (
-                  <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    <Lock className="size-5 shrink-0 text-amber-600" />
+                  <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                    <Lock className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
                     <span>ปิดรับสมัครแล้ว · ใบสมัครของคุณยังอยู่ระหว่างการพิจารณา</span>
                   </div>
                 )}
                 {iv && (
-                  <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    <CalendarClock className="size-5 shrink-0 text-amber-600" />
+                  <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                    <CalendarClock className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
                     <span>นัดสัมภาษณ์ <b>{formatDate(iv.interview_date)}</b> เวลา <b>{iv.interview_time.slice(0, 5)} น.</b></span>
                   </div>
                 )}

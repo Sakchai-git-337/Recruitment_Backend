@@ -8,7 +8,7 @@ export function PipelineBar({ counts }: { counts: Record<AppStatus, number> }) {
   const total = APP_STATUSES.reduce((n, s) => n + counts[s], 0)
   return (
     <div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
         {total > 0 && APP_STATUSES.map((s) => counts[s] > 0 && (
           <div key={s} className={BAR[s]} style={{ width: `${(counts[s] / total) * 100}%` }} title={`${APP_STATUS_LABEL[s]} ${counts[s]}`} />
         ))}
@@ -17,8 +17,8 @@ export function PipelineBar({ counts }: { counts: Record<AppStatus, number> }) {
         {APP_STATUSES.map((s) => (
           <li key={s} className="flex items-center gap-2">
             <span className={`size-2.5 rounded-full ${BAR[s]}`} />
-            <span className="text-sm text-slate-500">{APP_STATUS_LABEL[s]}</span>
-            <span className="ml-auto text-sm font-semibold tabular-nums text-slate-900 sm:ml-1">{counts[s]}</span>
+            <span className="text-sm text-muted-foreground">{APP_STATUS_LABEL[s]}</span>
+            <span className="ml-auto text-sm font-semibold tabular-nums text-foreground sm:ml-1">{counts[s]}</span>
           </li>
         ))}
       </ul>

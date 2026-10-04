@@ -46,13 +46,13 @@ function LoginForm() {
       <FormField label="รหัสผ่าน" id="password" required>
         <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="รหัสผ่านของคุณ" />
       </FormField>
-      {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {busy && <Loader2 className="animate-spin" />} เข้าสู่ระบบ
       </Button>
-      <p className="pt-2 text-center text-sm text-slate-500">
+      <p className="pt-2 text-center text-sm text-muted-foreground">
         ยังไม่มีบัญชี?{" "}
-        <Link href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"} className="font-medium text-indigo-600 hover:underline">สมัครสมาชิก</Link>
+        <Link href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">สมัครสมาชิก</Link>
       </p>
     </form>
   )

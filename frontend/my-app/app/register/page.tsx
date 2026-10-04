@@ -74,9 +74,9 @@ function RegisterForm() {
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {busy && <Loader2 className="animate-spin" />} สมัครสมาชิก
       </Button>
-      <p className="pt-2 text-center text-sm text-slate-500">
+      <p className="pt-2 text-center text-sm text-muted-foreground">
         มีบัญชีอยู่แล้ว?{" "}
-        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="font-medium text-indigo-600 hover:underline">เข้าสู่ระบบ</Link>
+        <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">เข้าสู่ระบบ</Link>
       </p>
     </form>
   )

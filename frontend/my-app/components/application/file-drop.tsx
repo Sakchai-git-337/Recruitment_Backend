@@ -55,19 +55,19 @@ export function FileDrop({
         onDragLeave={() => setOver(false)}
         onDrop={(e) => { e.preventDefault(); setOver(false); add(e.dataTransfer.files) }}
         className={cn(
-          "flex cursor-pointer items-center gap-3 rounded-lg border border-dashed bg-white px-4 py-3 outline-none transition-colors hover:border-indigo-400 hover:bg-indigo-50/40 focus-visible:ring-3 focus-visible:ring-ring/50",
-          has && !multiple && "border-solid border-emerald-300 bg-emerald-50/40",
-          over && "border-indigo-500 bg-indigo-50", error && "border-red-400",
+          "flex cursor-pointer items-center gap-3 rounded-lg border border-dashed bg-card px-4 py-3 outline-none transition-colors hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/10 focus-visible:ring-3 focus-visible:ring-ring/50",
+          has && !multiple && "border-solid border-emerald-300 dark:border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-500/10",
+          over && "border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10", error && "border-red-400",
         )}
       >
-        <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", has ? "bg-emerald-100 text-emerald-600" : "bg-indigo-50 text-indigo-600")}>
+        <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", has ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400")}>
           {has ? <CheckCircle2 className="size-5" /> : <UploadCloud className="size-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-slate-900">
-            {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+          <p className="text-sm font-medium text-foreground">
+            {label}{required && <span className="ml-0.5 text-red-500 dark:text-red-400">*</span>}
           </p>
-          <p className="text-xs text-slate-500">ลากไฟล์มาวาง หรือคลิกเลือก · PDF/JPG/PNG ≤ 10 MB</p>
+          <p className="text-xs text-muted-foreground">ลากไฟล์มาวาง หรือคลิกเลือก · PDF/JPG/PNG ≤ 10 MB</p>
         </div>
         <input
           ref={input} type="file" hidden multiple={multiple} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
@@ -75,20 +75,20 @@ export function FileDrop({
         />
       </div>
       {files.map((f, i) => (
-        <div key={i} className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-1.5 text-sm">
-          <FileText className="size-4 shrink-0 text-slate-400" />
-          <span className="min-w-0 flex-1 truncate text-slate-800">{f.name}</span>
-          <span className="shrink-0 text-xs text-slate-500">{formatBytes(f.size)}</span>
+        <div key={i} className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-1.5 text-sm">
+          <FileText className="size-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate text-foreground">{f.name}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(f.size)}</span>
           <button
             type="button" aria-label={`ลบไฟล์ ${f.name}`}
-            className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+            className="rounded p-0.5 text-muted-foreground hover:bg-border hover:text-red-600 dark:hover:text-red-400"
             onClick={() => onChange(files.filter((_, j) => j !== i))}
           >
             <X className="size-4" />
           </button>
         </div>
       ))}
-      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   )
 }

@@ -22,8 +22,8 @@ export function RequireRole({ role, children }: { role: Role; children: React.Re
 
   if (!allowed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="size-6 animate-spin text-indigo-600" aria-label="กำลังโหลด" />
+      <div className="flex min-h-screen items-center justify-center bg-muted/40">
+        <Loader2 className="size-6 animate-spin text-indigo-600 dark:text-indigo-400" aria-label="กำลังโหลด" />
       </div>
     )
   }

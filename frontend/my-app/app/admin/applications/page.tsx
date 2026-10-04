@@ -22,10 +22,10 @@ type Filter = AppStatus | "all"
 function Person({ a }: { a: Application }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <Avatar className="size-9 shrink-0"><AvatarFallback className="bg-indigo-50 text-xs font-medium text-indigo-700">{initials(a.applicant_name ?? "?")}</AvatarFallback></Avatar>
+      <Avatar className="size-9 shrink-0"><AvatarFallback className="bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-700 dark:text-indigo-300">{initials(a.applicant_name ?? "?")}</AvatarFallback></Avatar>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-slate-900">{a.applicant_name ?? `ผู้สมัคร #${a.user_id}`}</p>
-        <p className="truncate text-xs text-slate-500">{a.applicant_email}</p>
+        <p className="truncate text-sm font-medium text-foreground">{a.applicant_name ?? `ผู้สมัคร #${a.user_id}`}</p>
+        <p className="truncate text-xs text-muted-foreground">{a.applicant_email}</p>
       </div>
     </div>
   )
@@ -75,7 +75,7 @@ export default function ApplicationsPage() {
         <>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาชื่อหรืออีเมล" className="pl-9" aria-label="ค้นหา" />
             </div>
             <Select value={jobId} onValueChange={setJobId}>
@@ -88,17 +88,17 @@ export default function ApplicationsPage() {
           </div>
 
           <div className="mb-4">
-            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
+            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-muted p-1" role="tablist">
               {tabs.map((t) => (
                 <button
                   key={t} type="button" role="tab" aria-selected={status === t} onClick={() => setStatus(t)}
                   className={cn(
                     "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                    status === t ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-900",
+                    status === t ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {t === "all" ? "ทั้งหมด" : APP_STATUS_LABEL[t]}
-                  <span className="text-xs text-slate-400 tabular-nums">{count(t)}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{count(t)}</span>
                 </button>
               ))}
             </div>
@@ -122,8 +122,8 @@ export default function ApplicationsPage() {
                     {rows.map((a) => (
                       <TableRow key={a.application_id} className="cursor-pointer" onClick={() => router.push(`/admin/applications/${a.application_id}`)}>
                         <TableCell className="py-3 pl-5"><Person a={a} /></TableCell>
-                        <TableCell className="text-slate-700">{a.job_title ?? `#${a.job_id}`}</TableCell>
-                        <TableCell className="text-slate-500">{formatDate(a.apply_date)}</TableCell>
+                        <TableCell className="text-foreground/80">{a.job_title ?? `#${a.job_id}`}</TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(a.apply_date)}</TableCell>
                         <TableCell className="pr-5"><StatusBadge status={a.status} /></TableCell>
                       </TableRow>
                     ))}
@@ -135,9 +135,9 @@ export default function ApplicationsPage() {
                   <li key={a.application_id}>
                     <Link href={`/admin/applications/${a.application_id}`} className="block rounded-xl border bg-card p-4 shadow-xs">
                       <Person a={a} />
-                      <p className="mt-3 truncate text-sm text-slate-700">{a.job_title ?? `#${a.job_id}`}</p>
+                      <p className="mt-3 truncate text-sm text-foreground/80">{a.job_title ?? `#${a.job_id}`}</p>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="text-xs text-slate-500">{formatDate(a.apply_date)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(a.apply_date)}</span>
                         <StatusBadge status={a.status} />
                       </div>
                     </Link>

@@ -59,15 +59,15 @@ export default function AdminHome() {
       </div>
 
       <section className={`${card} mt-6 p-5`}>
-        <h2 className="mb-4 font-semibold text-slate-900">สถานะการสมัคร</h2>
+        <h2 className="mb-4 font-semibold text-foreground">สถานะการสมัคร</h2>
         <PipelineBar counts={counts} />
       </section>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
         <section className={`${card} xl:col-span-2`}>
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-semibold text-slate-900">ใบสมัครล่าสุด</h2>
-            <Link href="/admin/applications" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">ดูทั้งหมด</Link>
+            <h2 className="font-semibold text-foreground">ใบสมัครล่าสุด</h2>
+            <Link href="/admin/applications" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">ดูทั้งหมด</Link>
           </div>
           {recent.length === 0 ? (
             <EmptyState icon={Inbox} title="ยังไม่มีใบสมัคร" className="border-0 shadow-none" />
@@ -75,11 +75,11 @@ export default function AdminHome() {
             <ul className="divide-y">
               {recent.map((a) => (
                 <li key={a.application_id}>
-                  <Link href={`/admin/applications/${a.application_id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50">
-                    <Avatar className="size-9"><AvatarFallback className="bg-indigo-50 text-xs font-medium text-indigo-700">{initials(a.applicant_name ?? "?")}</AvatarFallback></Avatar>
+                  <Link href={`/admin/applications/${a.application_id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/40">
+                    <Avatar className="size-9"><AvatarFallback className="bg-indigo-50 dark:bg-indigo-500/10 text-xs font-medium text-indigo-700 dark:text-indigo-300">{initials(a.applicant_name ?? "?")}</AvatarFallback></Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-900">{a.applicant_name ?? `ผู้สมัคร #${a.user_id}`}</p>
-                      <p className="truncate text-xs text-slate-500">{a.job_title ?? `#${a.job_id}`} · {formatDate(a.apply_date)}</p>
+                      <p className="truncate text-sm font-medium text-foreground">{a.applicant_name ?? `ผู้สมัคร #${a.user_id}`}</p>
+                      <p className="truncate text-xs text-muted-foreground">{a.job_title ?? `#${a.job_id}`} · {formatDate(a.apply_date)}</p>
                     </div>
                     <StatusBadge status={a.status} />
                   </Link>
@@ -91,8 +91,8 @@ export default function AdminHome() {
 
         <section className={card}>
           <div className="flex items-center justify-between border-b px-5 py-4">
-            <h2 className="font-semibold text-slate-900">ตำแหน่งที่เปิดรับ</h2>
-            <Link href="/admin/jobs" className="text-sm font-medium text-indigo-600 hover:text-indigo-700">จัดการ</Link>
+            <h2 className="font-semibold text-foreground">ตำแหน่งที่เปิดรับ</h2>
+            <Link href="/admin/jobs" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">จัดการ</Link>
           </div>
           {openJobs.length === 0 ? (
             <EmptyState icon={Briefcase} title="ไม่มีตำแหน่งที่เปิดรับ" className="border-0 shadow-none" />
@@ -100,12 +100,12 @@ export default function AdminHome() {
             <ul className="divide-y">
               {openJobs.slice(0, 6).map((j) => (
                 <li key={j.job_id}>
-                  <Link href={`/admin/jobs/${j.job_id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50">
+                  <Link href={`/admin/jobs/${j.job_id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-muted/40">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{j.title}</p>
-                      <p className="truncate text-xs text-slate-500">{j.department || j.location}</p>
+                      <p className="truncate text-sm font-medium text-foreground">{j.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{j.department || j.location}</p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{perJob.get(j.job_id) ?? 0} คน</span>
+                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground/80">{perJob.get(j.job_id) ?? 0} คน</span>
                   </Link>
                 </li>
               ))}

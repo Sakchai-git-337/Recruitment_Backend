@@ -75,14 +75,14 @@ export function JobPipeline({ jobId }: { jobId: number }) {
               setDragId(null)
             }}
             className={cn(
-              "flex min-h-48 flex-col rounded-xl border bg-slate-100/70 p-2.5 transition-colors",
-              over === s && "border-indigo-400 bg-indigo-50",
+              "flex min-h-48 flex-col rounded-xl border bg-muted/70 p-2.5 transition-colors",
+              over === s && "border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10",
             )}
           >
-            <header className="mb-2.5 flex items-center gap-2 px-1.5 pt-1 text-sm font-medium text-slate-700">
+            <header className="mb-2.5 flex items-center gap-2 px-1.5 pt-1 text-sm font-medium text-foreground/80">
               <span className={cn("size-2 rounded-full", DOT[s])} />
               {APP_STATUS_LABEL[s]}
-              <span className="ml-auto rounded-full bg-white px-2 text-xs tabular-nums text-slate-500 shadow-xs">{groups[s].length}</span>
+              <span className="ml-auto rounded-full bg-card px-2 text-xs tabular-nums text-muted-foreground shadow-xs">{groups[s].length}</span>
             </header>
             <div className="flex flex-1 flex-col gap-2.5">
               {groups[s].map((a) => {
@@ -101,16 +101,16 @@ export function JobPipeline({ jobId }: { jobId: number }) {
                     )}
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                         {initials(a.applicant_name || "?")}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <Link href={`/admin/applications/${a.application_id}`} className="block truncate text-sm font-medium text-slate-900 hover:text-indigo-600">
+                        <Link href={`/admin/applications/${a.application_id}`} className="block truncate text-sm font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400">
                           {a.applicant_name || "ไม่ระบุชื่อ"}
                         </Link>
-                        <p className="truncate text-xs text-slate-500">สมัคร {formatDate(a.apply_date)}</p>
+                        <p className="truncate text-xs text-muted-foreground">สมัคร {formatDate(a.apply_date)}</p>
                       </div>
-                      {isLocked && <Lock className="size-3.5 text-slate-400" />}
+                      {isLocked && <Lock className="size-3.5 text-muted-foreground" />}
                     </div>
                     <div className="relative mt-3">
                     <select
@@ -118,16 +118,16 @@ export function JobPipeline({ jobId }: { jobId: number }) {
                       value={a.status}
                       disabled={isLocked}
                       onChange={(e) => void move(a, e.target.value as AppStatus)}
-                      className="h-9 w-full appearance-none rounded-lg border border-input bg-transparent pr-8 pl-3 text-sm text-slate-700 shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="h-9 w-full appearance-none rounded-lg border border-input bg-transparent pr-8 pl-3 text-sm text-foreground/80 shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {APP_STATUSES.map((x) => <option key={x} value={x}>{APP_STATUS_LABEL[x]}</option>)}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-slate-400" />
+                    <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                     </div>
                   </article>
                 )
               })}
-              {groups[s].length === 0 && <p className="py-6 text-center text-xs text-slate-400">ไม่มีผู้สมัคร</p>}
+              {groups[s].length === 0 && <p className="py-6 text-center text-xs text-muted-foreground">ไม่มีผู้สมัคร</p>}
             </div>
           </section>
         ))}

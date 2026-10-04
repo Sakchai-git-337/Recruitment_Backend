@@ -37,8 +37,8 @@ export function FormDialog({ app, onClose }: { app: Application | null; onClose:
   const { value, error, loading, retry } = useLoad<{ data: ApplicationForm; consent_at: string }>(app, (id) => `/applications/${id}/form`)
   return (
     <Dialog open={!!app} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex max-h-[85vh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden bg-slate-50 p-0 sm:max-w-4xl">
-        <DialogHeader className="shrink-0 border-b bg-white px-5 py-4 pr-12">
+      <DialogContent className="flex max-h-[85vh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden bg-muted/40 p-0 sm:max-w-4xl">
+        <DialogHeader className="shrink-0 border-b bg-card px-5 py-4 pr-12">
           <DialogTitle className="text-base">{app?.job_title ?? "ใบสมัครของฉัน"}</DialogTitle>
           <DialogDescription>{app && `สมัครเมื่อ ${formatDate(app.apply_date)}`}</DialogDescription>
         </DialogHeader>
@@ -70,10 +70,10 @@ export function DocumentsDialog({ app, onClose }: { app: Application | null; onC
             <ul className="max-h-96 divide-y overflow-y-auto rounded-lg border">
               {value.map((d) => (
                 <li key={d.document_id} className="flex items-center gap-3 p-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><FileText className="size-4" /></span>
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"><FileText className="size-4" /></span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-900">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</p>
-                    <p className="truncate text-xs text-slate-500">{d.filename} · {formatBytes(d.size_bytes)} · {formatDate(d.uploaded_at)}</p>
+                    <p className="truncate text-sm font-medium text-foreground">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</p>
+                    <p className="truncate text-xs text-muted-foreground">{d.filename} · {formatBytes(d.size_bytes)} · {formatDate(d.uploaded_at)}</p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => open(d)}><ExternalLink /> เปิด</Button>
                 </li>

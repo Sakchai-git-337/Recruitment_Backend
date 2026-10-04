@@ -48,8 +48,8 @@ function validate(v: Values): Record<string, string> {
 function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-xl border bg-card p-5 shadow-xs sm:p-6">
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
+      {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
       <div className="mt-5 grid gap-5 sm:grid-cols-2">{children}</div>
     </section>
   )

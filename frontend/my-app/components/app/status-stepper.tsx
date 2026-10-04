@@ -3,10 +3,10 @@ import { cn } from "@/lib/utils"
 import { APP_STATUS_LABEL, type AppStatus } from "@/lib/types"
 
 const FLOW: AppStatus[] = ["pending", "screening", "interview", "passed"]
-type State = "done" | "current" | "todo" | "rejected" | "passed"
+type State = "done" | "current" | "todo" | "rejected" | "passed" | "rejdone"
 
 function Step({
-  state, label, status, current, icon, line, lineDone, onClick,
+  state, label, status, current, icon, line, lineDone, lineRed, onClick,
 }: {
   state: State
   label: string
@@ -15,6 +15,7 @@ function Step({
   icon: React.ReactNode
   line: boolean
   lineDone: boolean
+  lineRed?: boolean
   onClick?: (s: AppStatus) => void
 }) {
   const body = (
@@ -23,22 +24,23 @@ function Step({
         className={cn(
           "relative z-10 flex size-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors",
           state === "done" && "border-indigo-600 bg-indigo-600 text-white",
-          state === "current" && "border-indigo-600 bg-white text-indigo-600 ring-4 ring-indigo-100",
-          state === "todo" && "border-slate-200 bg-white text-slate-400",
-          state === "rejected" && "border-red-600 bg-red-600 text-white ring-4 ring-red-100",
-          state === "passed" && "border-green-600 bg-green-600 text-white ring-4 ring-green-100",
+          state === "current" && "border-indigo-600 bg-card text-indigo-600 dark:text-indigo-400 ring-4 ring-indigo-100 dark:ring-indigo-500/30",
+          state === "rejdone" && "border-red-500 bg-red-50 text-red-600 dark:border-red-400 dark:bg-red-950 dark:text-red-300",
+          state === "todo" && "border-border bg-card text-muted-foreground",
+          state === "rejected" && "border-red-600 bg-red-600 text-white ring-4 ring-red-100 dark:ring-red-500/30",
+          state === "passed" && "border-green-600 bg-green-600 text-white ring-4 ring-green-100 dark:ring-green-500/30",
         )}
       >
         {icon}
       </span>
-      <span className={cn("mt-2 text-xs font-medium", state === "todo" ? "text-slate-400" : state === "rejected" ? "text-red-700" : state === "passed" ? "text-green-700" : "text-slate-900")}>
+      <span className={cn("mt-2 text-xs font-medium", state === "todo" ? "text-muted-foreground" : state === "rejected" ? "text-red-700 dark:text-red-300" : state === "passed" ? "text-green-700 dark:text-green-300" : "text-foreground")}>
         {label}
       </span>
     </>
   )
   return (
     <li className="relative flex flex-1 flex-col items-center">
-      {line && <span className={cn("absolute top-4 left-1/2 h-0.5 w-full -translate-y-1/2", lineDone ? "bg-indigo-600" : "bg-slate-200")} />}
+      {line && <span className={cn("absolute top-4 left-1/2 h-0.5 w-full -translate-y-1/2", lineRed ? "bg-red-500 dark:bg-red-400" : lineDone ? "bg-indigo-600" : "bg-border")} />}
       {onClick ? (
         <button
           type="button"
@@ -71,15 +73,15 @@ export function StatusStepper({
 
   return (
     <ol className={cn("flex w-full items-start", className)}>
-      {FLOW.map((s, i) => {
+      {FLOW.filter((s) => !(rejected && !onChange && s === "passed")).map((s, i) => {
         // "passed" is a terminal state like "rejected": green check instead of the in-progress ring
-        const state: State = rejected ? "todo" : i < cur ? "done" : i === cur ? (s === "passed" ? "passed" : "current") : "todo"
+        const state: State = rejected ? "rejdone" : i < cur ? "done" : i === cur ? (s === "passed" ? "passed" : "current") : "todo"
         return (
           <Step
             key={s} state={state} label={APP_STATUS_LABEL[s]} status={s} current={status} onClick={click}
             icon={state === "done" || state === "passed" ? <Check className="size-4" /> : i + 1}
             line={showRejected || i < FLOW.length - 1}
-            lineDone={!rejected && i < cur}
+            lineDone={!rejected && i < cur} lineRed={rejected}
           />
         )
       })}

@@ -83,18 +83,18 @@ export function AddressAutocomplete({ id, value, invalid, onChange, onPick }: {
       {show && (
         <ul
           id={listId} role="listbox"
-          className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-auto rounded-lg border bg-white py-1 shadow-lg"
+          className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-auto rounded-lg border bg-card py-1 shadow-lg"
         >
           {matches.map((r, i) => (
             <li
               key={r.join("|")} id={`${listId}-${i}`} role="option" aria-selected={i === active}
               onMouseDown={(e) => { e.preventDefault(); pick(r) }} onMouseEnter={() => setActive(i)}
-              className={cn("cursor-pointer px-3 py-2 text-sm text-slate-700", i === active && "bg-indigo-50 text-indigo-700")}
+              className={cn("cursor-pointer px-3 py-2 text-sm text-foreground/80", i === active && "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300")}
             >
               <span className="font-medium">{r[0]}</span>
-              <span className="text-slate-400"> › </span>{r[1]}
-              <span className="text-slate-400"> › </span>{r[2]}
-              {r[3] && <span className="ml-2 text-slate-500">{r[3]}</span>}
+              <span className="text-muted-foreground"> › </span>{r[1]}
+              <span className="text-muted-foreground"> › </span>{r[2]}
+              {r[3] && <span className="ml-2 text-muted-foreground">{r[3]}</span>}
             </li>
           ))}
         </ul>

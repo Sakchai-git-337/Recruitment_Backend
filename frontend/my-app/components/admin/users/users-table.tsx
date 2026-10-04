@@ -17,14 +17,14 @@ function Who({ u, self }: { u: User; self: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <Avatar className="size-9">
-        <AvatarFallback className="bg-indigo-50 text-xs font-semibold text-indigo-700">{initials(u.full_name)}</AvatarFallback>
+        <AvatarFallback className="bg-indigo-50 dark:bg-indigo-500/10 text-xs font-semibold text-indigo-700 dark:text-indigo-300">{initials(u.full_name)}</AvatarFallback>
       </Avatar>
       <div className="min-w-0">
-        <p className="truncate font-medium text-slate-900">
+        <p className="truncate font-medium text-foreground">
           {u.full_name}
-          {self && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">คุณ</span>}
+          {self && <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">คุณ</span>}
         </p>
-        <p className="truncate text-sm text-slate-500 md:hidden">{u.email}</p>
+        <p className="truncate text-sm text-muted-foreground md:hidden">{u.email}</p>
       </div>
     </div>
   )
@@ -60,7 +60,7 @@ export function UsersTable({
     const sel = (
       <Select value={u.role} onValueChange={(v) => onRole(u, v as User["role"])} disabled={self || busyId === u.user_id}>
         <SelectTrigger size="sm" className="w-28" aria-label={`สิทธิ์ของ ${u.full_name}`}>
-          {self && <Lock className="size-3 text-slate-400" />}
+          {self && <Lock className="size-3 text-muted-foreground" />}
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -81,7 +81,7 @@ export function UsersTable({
     <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
       <Table className="hidden md:table">
         <TableHeader>
-          <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+          <TableRow className="bg-muted/70 hover:bg-muted/70">
             <TableHead className="pl-5">ผู้ใช้</TableHead>
             <TableHead>อีเมล</TableHead>
             <TableHead>เบอร์โทร</TableHead>
@@ -95,8 +95,8 @@ export function UsersTable({
             return (
               <TableRow key={u.user_id}>
                 <TableCell className="pl-5"><Who u={u} self={self} /></TableCell>
-                <TableCell className="text-slate-600">{u.email}</TableCell>
-                <TableCell className="text-slate-600">{u.phone || "-"}</TableCell>
+                <TableCell className="text-foreground/70">{u.email}</TableCell>
+                <TableCell className="text-foreground/70">{u.phone || "-"}</TableCell>
                 <TableCell>{roleSelect(u, self)}</TableCell>
                 <TableCell className="pr-5 text-right"><Actions u={u} self={self} onEdit={onEdit} onDelete={onDelete} /></TableCell>
               </TableRow>
@@ -113,7 +113,7 @@ export function UsersTable({
                 <Who u={u} self={self} />
                 <Actions u={u} self={self} onEdit={onEdit} onDelete={onDelete} />
               </div>
-              <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
+              <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
                 <span>{u.phone || "-"}</span>
                 {roleSelect(u, self)}
               </div>

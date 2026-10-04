@@ -21,7 +21,7 @@ function Filter({ value, onChange, placeholder, options }: {
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-full bg-white sm:w-48" aria-label={placeholder}><SelectValue /></SelectTrigger>
+      <SelectTrigger className="w-full bg-card sm:w-48" aria-label={placeholder}><SelectValue /></SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>{placeholder}</SelectItem>
         {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -65,18 +65,18 @@ export default function Home() {
 
   return (
     <PublicShell>
-      <section className="border-b bg-gradient-to-b from-indigo-50 via-indigo-50/40 to-slate-50">
+      <section className="border-b bg-gradient-to-b from-indigo-50 via-indigo-50/40 to-muted/40 dark:from-indigo-500/15 dark:via-indigo-500/5 dark:to-background">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-          <p className="mb-3 inline-flex rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-medium text-indigo-700">
+          <p className="mb-3 inline-flex rounded-full border border-indigo-100 dark:border-indigo-500/30 bg-card px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
             กำลังเปิดรับสมัคร
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">ร่วมงานกับเรา</h1>
-          <p className="mt-4 max-w-xl text-base text-slate-500 sm:text-lg">ค้นหาตำแหน่งงานที่ใช่ แล้วสมัครออนไลน์ได้ในไม่กี่ขั้นตอน</p>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">ร่วมงานกับเรา</h1>
+          <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">ค้นหาตำแหน่งงานที่ใช่ แล้วสมัครออนไลน์ได้ในไม่กี่ขั้นตอน</p>
           <div className="relative mt-8 max-w-xl">
-            <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาตำแหน่งงาน แผนก หรือสถานที่"
-              aria-label="ค้นหาตำแหน่งงาน" className="h-12 rounded-xl bg-white pl-12 text-base shadow-sm"
+              aria-label="ค้นหาตำแหน่งงาน" className="h-12 rounded-xl bg-card pl-12 text-base shadow-sm"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function Home() {
               options={EMPLOYMENT_TYPES.map((t) => ({ value: t, label: EMPLOYMENT_TYPE_LABEL[t] }))} />
             <Filter value={loc} onChange={setLoc} placeholder="ทุกสถานที่" options={uniq((j) => j.location)} />
           </div>
-          {jobs && <p className="text-sm text-slate-500">พบ {shown.length} ตำแหน่ง</p>}
+          {jobs && <p className="text-sm text-muted-foreground">พบ {shown.length} ตำแหน่ง</p>}
         </div>
 
         {error ? (

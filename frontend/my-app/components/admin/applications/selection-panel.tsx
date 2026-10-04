@@ -36,14 +36,14 @@ function Section({ title, icon: Icon, empty, list, form }: { title: string; icon
   return (
     <section className="rounded-xl border bg-card shadow-xs">
       <div className="flex items-center gap-2 border-b px-5 py-4">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><Icon className="size-4" /></span>
-        <h3 className="font-semibold text-slate-900">{title}</h3>
-        <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 tabular-nums">{list.length}</span>
+        <span className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"><Icon className="size-4" /></span>
+        <h3 className="font-semibold text-foreground">{title}</h3>
+        <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground/70 tabular-nums">{list.length}</span>
       </div>
       <div className="space-y-3 p-5">
-        {list.length === 0 ? <p className="rounded-lg border border-dashed py-6 text-center text-sm text-slate-500">{empty}</p> : list}
+        {list.length === 0 ? <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">{empty}</p> : list}
       </div>
-      <div className="rounded-b-xl border-t bg-slate-50/60 p-5">{form}</div>
+      <div className="rounded-b-xl border-t bg-muted/60 p-5">{form}</div>
     </section>
   )
 }
@@ -54,11 +54,11 @@ function Row({ children, onSave, onDelete, busy, canSave = true, meta }: {
 }) {
   const [confirm, setConfirm] = useState(false)
   return (
-    <div className="rounded-lg border bg-white p-4">
-      {meta && <p className="mb-3 text-xs font-medium text-slate-500">{meta}</p>}
+    <div className="rounded-lg border bg-card p-4">
+      {meta && <p className="mb-3 text-xs font-medium text-muted-foreground">{meta}</p>}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" disabled={busy} onClick={() => setConfirm(true)}>
+        <Button type="button" variant="ghost" size="sm" className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300" disabled={busy} onClick={() => setConfirm(true)}>
           <Trash2 className="size-4" />ลบ
         </Button>
         <Button type="button" size="sm" disabled={busy || !canSave} onClick={onSave}>บันทึก</Button>

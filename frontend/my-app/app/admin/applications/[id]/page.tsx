@@ -36,7 +36,7 @@ type Data = {
 const optional = <T,>(p: Promise<T>): Promise<T | null> =>
   p.catch((e) => { if (e instanceof ApiError && e.status === 404) return null; throw e })
 
-const tabClass = "after:hidden rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 pb-3 text-sm data-active:border-indigo-600 data-active:text-indigo-700"
+const tabClass = "after:hidden rounded-none border-x-0 border-t-0 border-b-2 border-transparent px-3 pb-3 text-sm data-active:border-indigo-600 data-active:text-indigo-700 dark:data-active:text-indigo-300"
 
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -101,7 +101,7 @@ export default function ApplicationDetailPage() {
         <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-5">
           <StatusBadge status={app.status} className="lg:order-last" />
           <div className="flex items-center gap-4">
-            <Avatar className="size-14"><AvatarFallback className="bg-indigo-50 text-lg font-medium text-indigo-700">{initials(name)}</AvatarFallback></Avatar>
+            <Avatar className="size-14"><AvatarFallback className="bg-indigo-50 dark:bg-indigo-500/10 text-lg font-medium text-indigo-700 dark:text-indigo-300">{initials(name)}</AvatarFallback></Avatar>
             <dl className="grid gap-x-8 gap-y-1.5 text-sm sm:grid-cols-2">
               <Meta icon={Mail} v={app.applicant_email} />
               <Meta icon={Phone} v={app.applicant_phone} />
@@ -123,7 +123,7 @@ export default function ApplicationDetailPage() {
           <div className="-mb-px overflow-x-auto">
             <TabsList variant="line" className="h-auto gap-1 p-0">
               <TabsTrigger value="form" className={tabClass}>ใบสมัคร</TabsTrigger>
-              <TabsTrigger value="docs" className={tabClass}>เอกสาร{data.docs.length > 0 && <span className="ml-1.5 text-xs text-slate-400">{data.docs.length}</span>}</TabsTrigger>
+              <TabsTrigger value="docs" className={tabClass}>เอกสาร{data.docs.length > 0 && <span className="ml-1.5 text-xs text-muted-foreground">{data.docs.length}</span>}</TabsTrigger>
               <TabsTrigger value="selection" className={tabClass}>การคัดเลือก</TabsTrigger>
               <TabsTrigger value="note" className={tabClass}>บันทึก</TabsTrigger>
             </TabsList>
@@ -140,7 +140,7 @@ export default function ApplicationDetailPage() {
             <>
               <div className="mb-4 hidden print:block">
                 <h1 className="text-xl font-semibold">ใบสมัครงาน: {name}</h1>
-                <p className="text-sm text-slate-600">{app.job_title} · สมัครเมื่อ {formatDate(app.apply_date)}</p>
+                <p className="text-sm text-foreground/70">{app.job_title} · สมัครเมื่อ {formatDate(app.apply_date)}</p>
               </div>
               <FormViewer data={data.form.data} consentAt={data.form.consent_at} />
             </>
@@ -156,10 +156,10 @@ export default function ApplicationDetailPage() {
             <ul className="divide-y rounded-xl border bg-card shadow-xs">
               {data.docs.map((d) => (
                 <li key={d.document_id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"><FileText className="size-5" /></span>
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"><FileText className="size-5" /></span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</p>
-                    <p className="truncate text-xs text-slate-500">{d.filename} · {formatBytes(d.size_bytes)}</p>
+                    <p className="text-sm font-medium text-foreground">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</p>
+                    <p className="truncate text-xs text-muted-foreground">{d.filename} · {formatBytes(d.size_bytes)}</p>
                   </div>
                   <Button
                     type="button" variant="outline" size="sm"
@@ -179,8 +179,8 @@ export default function ApplicationDetailPage() {
 
         <TabsContent value="note" className="print:hidden">
           <div className="rounded-xl border bg-card p-5 shadow-xs">
-            <h3 className="font-semibold text-slate-900">บันทึกภายใน</h3>
-            <p className="mt-1 text-sm text-slate-500">ผู้สมัครไม่เห็นข้อความนี้</p>
+            <h3 className="font-semibold text-foreground">บันทึกภายใน</h3>
+            <p className="mt-1 text-sm text-muted-foreground">ผู้สมัครไม่เห็นข้อความนี้</p>
             <Textarea className="mt-4" rows={6} value={noteValue} onChange={(e) => setNote(e.target.value)} aria-label="บันทึกภายใน" />
             <div className="mt-4 flex justify-end">
               <Button type="button" disabled={busy || note === null || note === app.note} onClick={() => run(() => api(`/applications/${id}`, { method: "PATCH", body: { note: noteValue } }), "บันทึกแล้ว")}>
@@ -196,8 +196,8 @@ export default function ApplicationDetailPage() {
 
 function Meta({ icon: Icon, v }: { icon: typeof Mail; v?: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 text-slate-600">
-      <Icon className="size-4 shrink-0 text-slate-400" />
+    <div className="flex min-w-0 items-center gap-2 text-foreground/70">
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <span className="truncate">{v || "-"}</span>
     </div>
   )

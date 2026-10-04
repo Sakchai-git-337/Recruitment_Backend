@@ -24,7 +24,7 @@ function Pills({ options, value, onChange, id }: {
             onClick={() => onChange(on && typeof o.value !== "boolean" ? (typeof o.value === "number" ? null : "") : o.value)}
             className={cn(
               "h-9 rounded-lg border px-3.5 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              on ? "border-indigo-600 bg-indigo-50 font-medium text-indigo-700" : "bg-white text-slate-700 hover:border-slate-400",
+              on ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 font-medium text-indigo-700 dark:text-indigo-300" : "bg-card text-foreground/80 hover:border-muted-foreground/60",
             )}
           >
             {o.label}
@@ -52,7 +52,7 @@ function Control({ f, value, onChange, id, invalid, onPatch }: {
             className={f.unit ? "pr-14" : undefined} value={value == null ? "" : String(value)}
             onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} {...aria}
           />
-          {f.unit && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-400">{f.unit}</span>}
+          {f.unit && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">{f.unit}</span>}
         </div>
       )
     case "date":
@@ -120,7 +120,7 @@ export function FieldGrid({ fields, data, form, errors, prefix = "", onChange }:
           return (
             <div key={f.key} id={id} className="sm:col-span-2">
               <RepeatableList
-                label={<>{f.label}{f.required && <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>}</>} rows={rows} minRows={f.minRows ?? 0} error={errors[path]}
+                label={<>{f.label}{f.required && <span className="ml-0.5 text-red-500 dark:text-red-400" aria-hidden="true">*</span>}</>} rows={rows} minRows={f.minRows ?? 0} error={errors[path]}
                 makeRow={() => Object.fromEntries((f.fields ?? []).map((c) => [c.key, blankValue(c)]))}
                 onChange={(r) => onChange(f.key, r)}
                 renderRow={(row, i, patch) => (
@@ -134,8 +134,8 @@ export function FieldGrid({ fields, data, form, errors, prefix = "", onChange }:
         if (f.type === "group") {
           const g = (data[f.key] ?? {}) as Row
           return (
-            <div key={f.key} className="rounded-lg border bg-slate-50/60 p-4 sm:col-span-2">
-              <p className="mb-4 text-sm font-medium text-slate-700">{f.label}</p>
+            <div key={f.key} className="rounded-lg border bg-muted/60 p-4 sm:col-span-2">
+              <p className="mb-4 text-sm font-medium text-foreground/80">{f.label}</p>
               <FieldGrid fields={f.fields ?? []} data={g} form={form} errors={errors} prefix={path + "."}
                 onChange={(k, v) => onChange(f.key, { ...g, [k]: v })} />
             </div>

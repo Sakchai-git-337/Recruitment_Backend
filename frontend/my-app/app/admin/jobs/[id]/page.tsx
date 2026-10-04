@@ -15,8 +15,8 @@ import { JobPipeline } from "@/components/admin/jobs/job-pipeline"
 
 function Meta({ icon: Icon, children }: { icon: typeof MapPin; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
-      <Icon className="size-4 text-slate-400" />
+    <span className="inline-flex items-center gap-1.5 text-sm text-foreground/70">
+      <Icon className="size-4 text-muted-foreground" />
       {children}
     </span>
   )
@@ -55,7 +55,7 @@ export default function AdminJobDetailPage({ params }: { params: Promise<{ id: s
         <Meta icon={Users}>รับ {job.headcount} คน</Meta>
         <Meta icon={CalendarClock}>ปิดรับ {job.closing_date ? formatDate(job.closing_date) : "ไม่กำหนด"}</Meta>
       </div>
-      <h2 className="mb-3 text-base font-semibold text-slate-900">ผู้สมัคร</h2>
+      <h2 className="mb-3 text-base font-semibold text-foreground">ผู้สมัคร</h2>
       <JobPipeline jobId={job.job_id} />
     </>
   )

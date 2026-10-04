@@ -193,23 +193,23 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     <PublicShell>
       <Shell>
         <div className="mb-6">
-          <Link href={`/jobs/${jobId}`} className="text-sm text-slate-500 hover:text-indigo-600">← กลับไปที่รายละเอียดตำแหน่ง</Link>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">สมัครงานออนไลน์</h1>
+          <Link href={`/jobs/${jobId}`} className="text-sm text-muted-foreground hover:text-indigo-600 dark:hover:text-indigo-400">← กลับไปที่รายละเอียดตำแหน่ง</Link>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">สมัครงานออนไลน์</h1>
         </div>
         <div className="grid items-start gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-4 lg:sticky lg:top-20">
             <div className="rounded-xl border bg-card p-4 shadow-xs">
-              <p className="text-xs font-medium text-slate-500">ตำแหน่งที่สมัคร</p>
-              <p className="mt-1 font-semibold text-slate-900">{job?.title}</p>
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+              <p className="text-xs font-medium text-muted-foreground">ตำแหน่งที่สมัคร</p>
+              <p className="mt-1 font-semibold text-foreground">{job?.title}</p>
+              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 {job?.department && <span className="inline-flex items-center gap-1"><Briefcase className="size-3.5" />{job.department}</span>}
                 {job?.location && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{job.location}</span>}
               </div>
             </div>
             <div className="rounded-xl border bg-card p-4 shadow-xs lg:hidden">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-slate-900">{TITLES[step - 1]}</span>
-                <span className="text-slate-500">ขั้นที่ {step}/{STEP_COUNT}</span>
+                <span className="font-medium text-foreground">{TITLES[step - 1]}</span>
+                <span className="text-muted-foreground">ขั้นที่ {step}/{STEP_COUNT}</span>
               </div>
               <Progress value={(step / STEP_COUNT) * 100} />
             </div>
@@ -224,12 +224,12 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
                       type="button" disabled={n > maxStep} onClick={() => goto(n)} aria-current={active ? "step" : undefined}
                       className={cn(
                         "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors disabled:cursor-not-allowed",
-                        active ? "bg-indigo-50 font-medium text-indigo-700" : n <= maxStep ? "text-slate-700 hover:bg-slate-50" : "text-slate-400",
+                        active ? "bg-indigo-50 dark:bg-indigo-500/10 font-medium text-indigo-700 dark:text-indigo-300" : n <= maxStep ? "text-foreground/80 hover:bg-muted/40" : "text-muted-foreground",
                       )}
                     >
                       <span className={cn(
                         "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                        done ? "bg-emerald-500 text-white" : active ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500",
+                        done ? "bg-emerald-500 text-white" : active ? "bg-indigo-600 text-white" : "bg-muted text-muted-foreground",
                       )}>
                         {done ? <Check className="size-3.5" /> : n}
                       </span>
@@ -243,17 +243,17 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
 
           <section className="rounded-xl border bg-card shadow-xs">
             <header className="border-b px-5 py-4 sm:px-6">
-              <p className="text-xs font-medium text-indigo-600">ขั้นที่ {step} จาก {STEP_COUNT}</p>
-              <h2 className="text-lg font-semibold text-slate-900">{TITLES[step - 1]}</h2>
+              <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">ขั้นที่ {step} จาก {STEP_COUNT}</p>
+              <h2 className="text-lg font-semibold text-foreground">{TITLES[step - 1]}</h2>
             </header>
             <div className="space-y-6 px-5 py-6 sm:px-6">
               {step === 1 && (
-                <div className="flex items-center gap-3 rounded-lg bg-indigo-50/60 px-4 py-3 text-sm text-slate-700">
-                  <Briefcase className="size-5 shrink-0 text-indigo-600" />
-                  <span>คุณกำลังสมัครตำแหน่ง <b className="text-slate-900">{job?.title}</b></span>
+                <div className="flex items-center gap-3 rounded-lg bg-indigo-50/60 dark:bg-indigo-500/10 px-4 py-3 text-sm text-foreground/80">
+                  <Briefcase className="size-5 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                  <span>คุณกำลังสมัครตำแหน่ง <b className="text-foreground">{job?.title}</b></span>
                 </div>
               )}
-              {last && <h3 className="text-base font-semibold text-slate-900">คำถามเพิ่มเติม</h3>}
+              {last && <h3 className="text-base font-semibold text-foreground">คำถามเพิ่มเติม</h3>}
               <FieldGrid
                 fields={last ? section.fields.filter((f) => !CONSENT_KEYS.includes(f.key)) : section.fields}
                 data={form} form={form} errors={errors} onChange={set}
@@ -267,17 +267,17 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
               )}
             </div>
             {submitting && uploadPct !== null && (
-              <div role="status" aria-live="polite" className="border-t bg-indigo-50/60 px-5 py-4 sm:px-6">
+              <div role="status" aria-live="polite" className="border-t bg-indigo-50/60 dark:bg-indigo-500/10 px-5 py-4 sm:px-6">
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-foreground">
                     {uploadPct < 100 ? `กำลังอัปโหลดเอกสาร (${fileCount} ไฟล์ · ${formatBytes(totalBytes)})` : "อัปโหลดครบแล้ว กำลังบันทึกใบสมัคร…"}
                   </span>
-                  <span className="tabular-nums text-indigo-700">{uploadPct}%</span>
+                  <span className="tabular-nums text-indigo-700 dark:text-indigo-300">{uploadPct}%</span>
                 </div>
                 <Progress value={uploadPct} aria-label="ความคืบหน้าการอัปโหลด" />
               </div>
             )}
-            <footer className="flex items-center justify-between gap-3 border-t bg-slate-50/60 px-5 py-4 sm:px-6">
+            <footer className="flex items-center justify-between gap-3 border-t bg-muted/60 px-5 py-4 sm:px-6">
               <Button type="button" variant="outline" disabled={step === 1 || submitting} onClick={() => goto(step - 1)}>
                 <ArrowLeft className="size-4" /> ย้อนกลับ
               </Button>
@@ -317,11 +317,11 @@ function phaseView(phase: Phase, job: Job | null, retry: () => void) {
     default:
       return (
         <div className="mx-auto max-w-lg rounded-xl border bg-card px-6 py-14 text-center shadow-xs">
-          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="size-9" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">ส่งใบสมัครเรียบร้อยแล้ว</h1>
-          <p className="mt-2 text-sm text-slate-500">ขอบคุณที่สนใจตำแหน่ง {job?.title} ทีมงานจะติดต่อกลับหลังพิจารณาใบสมัคร</p>
+          <h1 className="text-xl font-bold text-foreground">ส่งใบสมัครเรียบร้อยแล้ว</h1>
+          <p className="mt-2 text-sm text-muted-foreground">ขอบคุณที่สนใจตำแหน่ง {job?.title} ทีมงานจะติดต่อกลับหลังพิจารณาใบสมัคร</p>
           <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
             <Button asChild><Link href="/me/applications">ดูใบสมัครของฉัน</Link></Button>
             <Button asChild variant="outline"><Link href="/">กลับหน้าแรก</Link></Button>

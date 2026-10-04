@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { IBM_Plex_Sans_Thai } from "next/font/google"
+import { ThemeProvider } from "@/components/app/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import "./globals.css"
@@ -17,10 +18,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="th" className={`${font.variable} h-full antialiased`}>
+    <html lang="th" suppressHydrationWarning className={`${font.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster richColors position="top-right" />
+        <ThemeProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster richColors position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   )

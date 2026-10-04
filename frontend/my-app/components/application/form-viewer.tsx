@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils"
 function Item({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   return (
     <div className={cn("min-w-0", wide && "sm:col-span-2 lg:col-span-3")}>
-      <dt className="text-xs font-medium text-slate-500">{label}</dt>
-      <dd className="mt-0.5 text-sm break-words whitespace-pre-wrap text-slate-900">{children}</dd>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-sm break-words whitespace-pre-wrap text-foreground">{children}</dd>
     </div>
   )
 }
@@ -18,17 +18,17 @@ function ListTable({ f, all }: { f: Field; all: unknown[] }) {
   if (cols.length === 0) return null
   return (
     <div className="sm:col-span-2 lg:col-span-3">
-      <p className="mb-1.5 text-xs font-medium text-slate-500">{f.label}</p>
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{f.label}</p>
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs text-slate-500">
+          <thead className="bg-muted/40 text-xs text-muted-foreground">
             <tr>{cols.map((c) => <th key={c.key} className="px-3 py-2 font-medium whitespace-nowrap">{c.label}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {rows.map((r, i) => (
               <tr key={i} className="break-inside-avoid">
                 {cols.map((c) => (
-                  <td key={c.key} className="px-3 py-2 align-top text-slate-900">
+                  <td key={c.key} className="px-3 py-2 align-top text-foreground">
                     {isEmpty(r[c.key]) ? "-" : display(c, r[c.key])}
                   </td>
                 ))}
@@ -53,8 +53,8 @@ function Fields({ fields, data, form }: { fields: Field[]; data: Row; form: Appl
           if (!(f.fields ?? []).some((c) => !isEmpty(g[c.key]))) return null
           return (
             <div key={f.key} className="sm:col-span-2 lg:col-span-3">
-              <p className="mb-2 text-xs font-medium text-slate-500">{f.label}</p>
-              <div className="grid gap-x-6 gap-y-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{f.label}</p>
+              <div className="grid gap-x-6 gap-y-4 rounded-lg bg-muted/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Fields fields={f.fields ?? []} data={g} form={form} />
               </div>
             </div>
@@ -85,13 +85,13 @@ export function FormViewer({ data: raw, consentAt, className }: { data: Applicat
     <div className={cn("space-y-4", className)}>
       {SECTIONS.filter((s) => hasContent(s.fields, data, data)).map((s) => (
         <section key={s.id} className="rounded-xl border bg-card p-5 shadow-xs break-inside-avoid-page print:rounded-none print:shadow-none">
-          <h3 className="mb-4 border-b pb-3 text-sm font-semibold text-slate-900">{s.title}</h3>
+          <h3 className="mb-4 border-b pb-3 text-sm font-semibold text-foreground">{s.title}</h3>
           <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
             <Fields fields={s.fields} data={data} form={data} />
           </dl>
         </section>
       ))}
-      {consentAt && <p className="text-xs text-slate-500">ยินยอมให้เก็บและใช้ข้อมูลส่วนบุคคล เมื่อ {formatDate(consentAt)}</p>}
+      {consentAt && <p className="text-xs text-muted-foreground">ยินยอมให้เก็บและใช้ข้อมูลส่วนบุคคล เมื่อ {formatDate(consentAt)}</p>}
     </div>
   )
 }

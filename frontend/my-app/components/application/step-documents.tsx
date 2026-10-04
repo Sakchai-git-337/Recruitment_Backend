@@ -41,14 +41,14 @@ export function StepDocuments({ files, setFiles, errors, onReject }: {
   return (
     <div id="f-docs" className="scroll-mt-24 space-y-3">
       <div>
-        <h3 className="text-base font-semibold text-slate-900">เอกสารประกอบการสมัคร</h3>
-        <p className="mt-0.5 text-sm text-slate-500">ต้องแนบ Resume และเอกสารวุฒิการศึกษา ส่วนเอกสารอื่นแนบเพิ่มได้ตามต้องการ</p>
+        <h3 className="text-base font-semibold text-foreground">เอกสารประกอบการสมัคร</h3>
+        <p className="mt-0.5 text-sm text-muted-foreground">ต้องแนบ Resume และเอกสารวุฒิการศึกษา ส่วนเอกสารอื่นแนบเพิ่มได้ตามต้องการ</p>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">{required.map(slot)}</div>
-      <details className="group rounded-lg border bg-slate-50/60 open:bg-transparent" open={optional.some((d) => files[d.type]?.length) || undefined}>
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-slate-700 outline-none hover:bg-slate-50 focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+      <details className="group rounded-lg border bg-muted/60 open:bg-transparent" open={optional.some((d) => files[d.type]?.length) || undefined}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-foreground/80 outline-none hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
           เอกสารเพิ่มเติม (ไม่บังคับ)
-          <ChevronDown className="size-4 text-slate-500 transition-transform group-open:rotate-180" />
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="grid gap-3 px-4 pb-4 lg:grid-cols-2">{optional.map(slot)}</div>
       </details>
@@ -61,13 +61,13 @@ export function StepConsent({ form, set, errors }: {
 }) {
   const name = `${form.first_name_th ?? ""} ${form.last_name_th ?? ""}`.trim()
   return (
-    <div className="space-y-4 rounded-xl border border-indigo-100 bg-indigo-50/40 p-5">
-      <div className="flex items-center gap-2 text-slate-900">
-        <ShieldCheck className="size-5 text-indigo-600" />
+    <div className="space-y-4 rounded-xl border border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/40 dark:bg-indigo-500/10 p-5">
+      <div className="flex items-center gap-2 text-foreground">
+        <ShieldCheck className="size-5 text-indigo-600 dark:text-indigo-400" />
         <h3 className="text-base font-semibold">ความยินยอมและการลงนาม</h3>
       </div>
       <div tabIndex={0} aria-label="ข้อความยินยอมการเก็บและใช้ข้อมูลส่วนบุคคล"
-        className="max-h-64 space-y-3 overflow-y-auto rounded-lg border bg-white p-4 text-sm leading-relaxed text-slate-600 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        className="max-h-64 space-y-3 overflow-y-auto rounded-lg border bg-card p-4 text-sm leading-relaxed text-foreground/70 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         <p>
           ข้าพเจ้ายินยอมให้บริษัทเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลและเอกสารที่แนบมากับใบสมัครนี้
           เพื่อวัตถุประสงค์ในการพิจารณาคัดเลือก ติดต่อกลับ และดำเนินการเกี่ยวกับการสมัครงาน
@@ -103,9 +103,9 @@ export function StepConsent({ form, set, errors }: {
           aria-invalid={!!errors.pdpa_consent || undefined}
           onCheckedChange={(c) => set("pdpa_consent", c === true)}
         />
-        <span className="text-sm text-slate-800">ข้าพเจ้ายอมรับและยินยอมตามข้อความข้างต้น <span className="text-red-500">*</span></span>
+        <span className="text-sm text-foreground">ข้าพเจ้ายอมรับและยินยอมตามข้อความข้างต้น <span className="text-red-500 dark:text-red-400">*</span></span>
       </label>
-      {errors.pdpa_consent && <p role="alert" className="text-xs text-red-600">{errors.pdpa_consent}</p>}
+      {errors.pdpa_consent && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{errors.pdpa_consent}</p>}
       <FormField label="ลงชื่อ (พิมพ์ชื่อ-นามสกุลของท่าน)" id="f-signature_name" required error={errors.signature_name}
         hint={name ? `พิมพ์ให้ตรงกับ: ${name}` : "กรุณากรอกชื่อ-นามสกุลในขั้นตอนข้อมูลส่วนตัวก่อน"}>
         <Input id="f-signature_name" value={String(form.signature_name ?? "")} autoComplete="off"
@@ -131,24 +131,24 @@ export function Review({ form, files, jobTitle }: { form: ApplicationForm; files
   ]
   const attached = DOC_TYPES.filter((d) => files[d.type]?.length)
   return (
-    <div className="rounded-xl border bg-white p-5">
-      <h3 className="mb-3 text-base font-semibold text-slate-900">ตรวจสอบก่อนส่ง</h3>
+    <div className="rounded-xl border bg-card p-5">
+      <h3 className="mb-3 text-base font-semibold text-foreground">ตรวจสอบก่อนส่ง</h3>
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         {rows.map(([k, v]) => (
           <div key={k} className="min-w-0">
-            <dt className="text-xs font-medium text-slate-500">{k}</dt>
-            <dd className="mt-0.5 truncate text-sm text-slate-900">{v || "-"}</dd>
+            <dt className="text-xs font-medium text-muted-foreground">{k}</dt>
+            <dd className="mt-0.5 truncate text-sm text-foreground">{v || "-"}</dd>
           </div>
         ))}
       </dl>
       <div className="mt-4 border-t pt-3">
-        <p className="text-xs font-medium text-slate-500">เอกสารที่แนบ ({fileCount} ไฟล์)</p>
-        {attached.length === 0 ? <p className="mt-0.5 text-sm text-slate-900">-</p> : (
+        <p className="text-xs font-medium text-muted-foreground">เอกสารที่แนบ ({fileCount} ไฟล์)</p>
+        {attached.length === 0 ? <p className="mt-0.5 text-sm text-foreground">-</p> : (
           <ul className="mt-1 space-y-1 text-sm">
             {attached.map((d) => (
               <li key={d.type} className="min-w-0">
-                <span className="text-slate-500">{d.label}: </span>
-                <span className="break-words text-slate-900">{files[d.type].map((f) => f.name).join(", ")}</span>
+                <span className="text-muted-foreground">{d.label}: </span>
+                <span className="break-words text-foreground">{files[d.type].map((f) => f.name).join(", ")}</span>
               </li>
             ))}
           </ul>

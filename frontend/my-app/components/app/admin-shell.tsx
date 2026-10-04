@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
+import { ThemeToggle } from "./theme-toggle"
 import { Logo } from "./logo"
 
 const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
@@ -40,10 +41,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active ? "bg-indigo-50 text-indigo-700" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                active ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" : "text-foreground/70 hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className={cn("size-[18px]", active ? "text-indigo-600" : "text-slate-400")} />
+              <Icon className={cn("size-[18px]", active ? "text-indigo-600 dark:text-indigo-400" : "text-muted-foreground")} />
               {label}
             </Link>
           )
@@ -52,12 +53,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t p-3">
         <div className="flex items-center gap-3 rounded-lg p-2">
           <Avatar>
-            <AvatarFallback className="bg-indigo-100 text-xs font-semibold text-indigo-700">{initials(user?.full_name ?? "")}</AvatarFallback>
+            <AvatarFallback className="bg-indigo-100 dark:bg-indigo-500/20 text-xs font-semibold text-indigo-700 dark:text-indigo-300">{initials(user?.full_name ?? "")}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">{user?.full_name ?? " "}</p>
-            <p className="truncate text-xs text-slate-500">{user?.email ?? " "}</p>
+            <p className="truncate text-sm font-medium text-foreground">{user?.full_name ?? " "}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.email ?? " "}</p>
           </div>
+          <ThemeToggle />
           <Button
             variant="ghost" size="icon" aria-label="ออกจากระบบ" title="ออกจากระบบ"
             onClick={() => {
@@ -67,7 +69,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               router.replace("/login")
             }}
           >
-            <LogOut className="size-4 text-slate-500" />
+            <LogOut className="size-4 text-muted-foreground" />
           </Button>
         </div>
       </div>
@@ -79,15 +81,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="min-h-screen bg-slate-50">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r bg-white lg:block print:hidden">
+    <div className="min-h-screen bg-muted/40">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r bg-card lg:block print:hidden">
         <SidebarContent />
       </aside>
-      <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-white/90 px-4 backdrop-blur lg:hidden print:hidden">
+      <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/90 px-4 backdrop-blur lg:hidden print:hidden">
         <Button variant="ghost" size="icon" aria-label="เปิดเมนู" onClick={() => setOpen(true)}>
           <Menu className="size-5" />
         </Button>
         <Logo href="/admin" />
+        <ThemeToggle className="ml-auto" />
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" showCloseButton={false} className="w-60 gap-0 p-0 data-[side=left]:sm:max-w-60">

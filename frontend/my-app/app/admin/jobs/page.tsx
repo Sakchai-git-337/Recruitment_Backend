@@ -96,7 +96,7 @@ export default function AdminJobsPage() {
             <div className="hidden overflow-hidden rounded-xl border bg-card shadow-xs md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+                  <TableRow className="bg-muted/70 hover:bg-muted/70">
                     <TableHead className="pl-5">ตำแหน่ง</TableHead>
                     <TableHead>ประเภท</TableHead>
                     <TableHead>สถานที่</TableHead>
@@ -111,16 +111,16 @@ export default function AdminJobsPage() {
                   {data.jobs.map((j) => (
                     <TableRow key={j.job_id}>
                       <TableCell className="pl-5">
-                        <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-slate-900 hover:text-indigo-600">{j.title}</Link>
-                        {j.department && <div className="text-xs text-slate-500">{j.department}</div>}
+                        <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-foreground hover:text-indigo-600 dark:hover:text-indigo-400">{j.title}</Link>
+                        {j.department && <div className="text-xs text-muted-foreground">{j.department}</div>}
                       </TableCell>
                       <TableCell><Badge variant="secondary">{EMPLOYMENT_TYPE_LABEL[j.employment_type]}</Badge></TableCell>
-                      <TableCell className="text-slate-600">{j.location}</TableCell>
-                      <TableCell className="text-right tabular-nums text-slate-600">{j.headcount}</TableCell>
+                      <TableCell className="text-foreground/70">{j.location}</TableCell>
+                      <TableCell className="text-right tabular-nums text-foreground/70">{j.headcount}</TableCell>
                       <TableCell className="text-right">
-                        <Link href={`/admin/jobs/${j.job_id}`} className="font-medium tabular-nums text-indigo-600 hover:underline">{data.counts[j.job_id] ?? 0}</Link>
+                        <Link href={`/admin/jobs/${j.job_id}`} className="font-medium tabular-nums text-indigo-600 dark:text-indigo-400 hover:underline">{data.counts[j.job_id] ?? 0}</Link>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-slate-600">{j.closing_date ? formatDate(j.closing_date) : "ไม่กำหนด"}</TableCell>
+                      <TableCell className="whitespace-nowrap text-foreground/70">{j.closing_date ? formatDate(j.closing_date) : "ไม่กำหนด"}</TableCell>
                       <TableCell><JobStatusBadge status={j.status} expired={j.status === "open" && !isJobOpen(j)} /></TableCell>
                       <TableCell className="pr-4 text-right">{menu(j)}</TableCell>
                     </TableRow>
@@ -134,8 +134,8 @@ export default function AdminJobsPage() {
                 <div key={j.job_id} className="rounded-xl border bg-card p-4 shadow-xs">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-slate-900">{j.title}</Link>
-                      <div className="text-xs text-slate-500">{[j.department, j.location].filter(Boolean).join(" · ")}</div>
+                      <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-foreground">{j.title}</Link>
+                      <div className="text-xs text-muted-foreground">{[j.department, j.location].filter(Boolean).join(" · ")}</div>
                     </div>
                     {menu(j)}
                   </div>
@@ -143,8 +143,8 @@ export default function AdminJobsPage() {
                     <JobStatusBadge status={j.status} expired={j.status === "open" && !isJobOpen(j)} />
                     <Badge variant="secondary">{EMPLOYMENT_TYPE_LABEL[j.employment_type]}</Badge>
                   </div>
-                  <div className="mt-3 flex justify-between border-t pt-3 text-xs text-slate-500">
-                    <span>ผู้สมัคร <b className="text-slate-900">{data.counts[j.job_id] ?? 0}</b> / รับ {j.headcount}</span>
+                  <div className="mt-3 flex justify-between border-t pt-3 text-xs text-muted-foreground">
+                    <span>ผู้สมัคร <b className="text-foreground">{data.counts[j.job_id] ?? 0}</b> / รับ {j.headcount}</span>
                     <span>ปิดรับ {j.closing_date ? formatDate(j.closing_date) : "ไม่กำหนด"}</span>
                   </div>
                 </div>

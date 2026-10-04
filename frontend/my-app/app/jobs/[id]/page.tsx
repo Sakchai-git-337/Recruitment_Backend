@@ -18,8 +18,8 @@ function Section({ title, text }: { title: string; text: string }) {
   if (!text.trim()) return null
   return (
     <section className="rounded-xl border bg-card p-6 shadow-xs">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <p className="mt-3 leading-relaxed whitespace-pre-line text-slate-600">{text}</p>
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      <p className="mt-3 leading-relaxed whitespace-pre-line text-foreground/70">{text}</p>
     </section>
   )
 }
@@ -27,8 +27,8 @@ function Section({ title, text }: { title: string; text: string }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 text-sm">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="text-right font-medium text-slate-900">{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium text-foreground">{value}</dd>
     </div>
   )
 }
@@ -65,10 +65,10 @@ export default function JobDetailPage() {
   return (
     <PublicShell rootClassName="pb-20 lg:pb-0">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        <nav className="mb-6 text-sm text-slate-500">
-          <Link href="/" className="hover:text-slate-900">ตำแหน่งงาน</Link>
+        <nav className="mb-6 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-foreground">ตำแหน่งงาน</Link>
           <span className="mx-1.5">/</span>
-          <span className="text-slate-700">{job?.title ?? "รายละเอียด"}</span>
+          <span className="text-foreground/80">{job?.title ?? "รายละเอียด"}</span>
         </nav>
 
         {notFound ? (
@@ -105,13 +105,13 @@ function JobBody({ job, role, applied }: { job: Job; role: "applicant" | "recrui
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="space-y-4">
-        <header className="rounded-xl border bg-gradient-to-br from-indigo-50/70 to-white p-6 shadow-xs sm:p-8">
+        <header className="rounded-xl border bg-gradient-to-br from-indigo-50/70 to-card dark:from-indigo-500/10 p-6 shadow-xs sm:p-8">
           <div className="flex flex-wrap items-center gap-2">
             <TypeBadge type={job.employment_type} />
-            {!open && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">ปิดรับสมัคร</span>}
+            {!open && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground/70">ปิดรับสมัคร</span>}
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">{job.title}</h1>
-          {m.department && <p className="mt-1 text-slate-500">{m.department.text}</p>}
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">{job.title}</h1>
+          {m.department && <p className="mt-1 text-muted-foreground">{m.department.text}</p>}
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
             {m.location && <MetaItem icon={m.location.icon}>{m.location.text}</MetaItem>}
             <MetaItem icon={m.salary.icon}>{m.salary.text}</MetaItem>
@@ -124,7 +124,7 @@ function JobBody({ job, role, applied }: { job: Job; role: "applicant" | "recrui
       </div>
 
       <aside className="rounded-xl border bg-card p-5 shadow-xs lg:sticky lg:top-24">
-        <h2 className="text-base font-semibold text-slate-900">สรุปตำแหน่ง</h2>
+        <h2 className="text-base font-semibold text-foreground">สรุปตำแหน่ง</h2>
         <dl className="mt-2 divide-y">
           <Row label="ประเภทงาน" value={EMPLOYMENT_TYPE_LABEL[job.employment_type] ?? job.employment_type} />
           <Row label="เงินเดือน" value={formatSalaryRange(job.salary_min, job.salary_max)} />
