@@ -11,7 +11,6 @@ import { EmptyState } from "@/components/app/empty-state"
 import { ErrorState, LoadingState } from "@/components/app/states"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { ApplicationForm } from "@/lib/application-form"
 
 type Loaded<T> = { id: number; value?: T; error?: string }
@@ -34,22 +33,22 @@ function useLoad<T>(app: Application | null, path: (id: number) => string) {
   return { value: cur?.value, error: cur?.error, loading: id != null && !cur, retry: () => { setRes(null); setAttempt((n) => n + 1) } }
 }
 
-export function FormSheet({ app, onClose }: { app: Application | null; onClose: () => void }) {
+export function FormDialog({ app, onClose }: { app: Application | null; onClose: () => void }) {
   const { value, error, loading, retry } = useLoad<{ data: ApplicationForm; consent_at: string }>(app, (id) => `/applications/${id}/form`)
   return (
-    <Sheet open={!!app} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto bg-slate-50 sm:max-w-2xl">
-        <SheetHeader className="border-b bg-white">
-          <SheetTitle>ใบสมัครของฉัน</SheetTitle>
-          <SheetDescription>{app?.job_title}</SheetDescription>
-        </SheetHeader>
-        <div className="p-4">
+    <Dialog open={!!app} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[85vh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden bg-slate-50 p-0 sm:max-w-4xl">
+        <DialogHeader className="shrink-0 border-b bg-white px-5 py-4 pr-12">
+          <DialogTitle className="text-base">{app?.job_title ?? "ใบสมัครของฉัน"}</DialogTitle>
+          <DialogDescription>{app && `สมัครเมื่อ ${formatDate(app.apply_date)}`}</DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {error ? <ErrorState message={error} onRetry={retry} />
             : loading || !value ? <LoadingState rows={8} />
             : <FormViewer data={value.data} consentAt={value.consent_at} />}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -59,7 +58,7 @@ export function DocumentsDialog({ app, onClose }: { app: Application | null; onC
     openDocument(d.document_id, d.filename).catch(() => toast.error("เปิดเอกสารไม่สำเร็จ"))
   return (
     <Dialog open={!!app} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-w-[calc(100%-1rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>เอกสารที่แนบ</DialogTitle>
           <DialogDescription>{app?.job_title}</DialogDescription>

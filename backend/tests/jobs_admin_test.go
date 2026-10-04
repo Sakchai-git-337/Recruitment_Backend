@@ -186,3 +186,33 @@ func TestAdminUsers(t *testing.T) {
 		t.Fatalf("delete applicant: %d", w.Code)
 	}
 }
+
+func TestApplicationCarriesJobStatusAndClosingDate(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	seedUser(t, "A", "a@x.com", "pw", "applicant")
+	hr := loginToken(t, r, "hr@x.com", "pw")
+	ap := loginToken(t, r, "a@x.com", "pw")
+	doJSON(t, r, "POST", "/jobs", hr, jobBody(map[string]any{"closing_date": "2030-01-31"}))
+	if w := submit(t, r, ap, 1, validForm(), goodFiles()); w.Code != 201 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	check := func(wantStatus string, wantDate any) {
+		t.Helper()
+		var list []map[string]any
+		dec(t, doJSON(t, r, "GET", "/applications", ap, nil).Body.Bytes(), &list)
+		var one map[string]any
+		dec(t, doJSON(t, r, "GET", "/applications/1", ap, nil).Body.Bytes(), &one)
+		if len(list) != 1 {
+			t.Fatal(list)
+		}
+		for _, m := range []map[string]any{list[0], one} {
+			if m["job_status"] != wantStatus || m["job_closing_date"] != wantDate {
+				t.Fatalf("want %s/%v got %v/%v", wantStatus, wantDate, m["job_status"], m["job_closing_date"])
+			}
+		}
+	}
+	check("open", "2030-01-31")
+	doJSON(t, r, "PATCH", "/jobs/1", hr, map[string]any{"status": "closed", "closing_date": nil})
+	check("closed", nil)
+}

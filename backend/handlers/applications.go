@@ -18,7 +18,8 @@ import (
 
 const applicationSelect = `
 	SELECT a.application_id, a.user_id, a.job_id, a.apply_date, a.status, a.note,
-	       u.full_name, u.email, COALESCE(u.phone, ''), j.title
+	       u.full_name, u.email, COALESCE(u.phone, ''), j.title,
+	       j.status, to_char(j.closing_date, 'YYYY-MM-DD')
 	FROM applications a
 	JOIN users u ON u.user_id = a.user_id
 	JOIN jobs j ON j.job_id = a.job_id
@@ -36,6 +37,8 @@ func scanApplication(row pgx.Row, app *models.Application) error {
 		&app.ApplicantEmail,
 		&app.ApplicantPhone,
 		&app.JobTitle,
+		&app.JobStatus,
+		&app.JobClosingDate,
 	)
 }
 

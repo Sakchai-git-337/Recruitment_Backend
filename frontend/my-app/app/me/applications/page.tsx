@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarClock, FileText, Folder, Inbox } from "lucide-react"
+import { CalendarClock, FileText, Folder, Inbox, Lock } from "lucide-react"
 import { api } from "@/lib/api"
 import { formatDate } from "@/lib/format"
+import { localToday, showClosedNotice } from "@/lib/job-closed"
 import type { Application, Interview } from "@/lib/types"
 import { PublicShell } from "@/components/app/public-shell"
 import { RequireRole } from "@/components/app/require-role"
@@ -14,15 +15,10 @@ import { ErrorState, LoadingState } from "@/components/app/states"
 import { StatusBadge } from "@/components/app/status-badge"
 import { StatusStepper } from "@/components/app/status-stepper"
 import { Button } from "@/components/ui/button"
-import { DocumentsDialog, FormSheet } from "@/components/public/application-dialogs"
-
-const today = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-}
+import { DocumentsDialog, FormDialog } from "@/components/public/application-dialogs"
 
 function nextInterview(appId: number, interviews: Interview[]): Interview | undefined {
-  const t = today()
+  const t = localToday()
   return interviews
     .filter((i) => i.application_id === appId && i.status === "scheduled" && i.interview_date.slice(0, 10) >= t)
     .sort((a, b) => (a.interview_date + a.interview_time).localeCompare(b.interview_date + b.interview_time))[0]
@@ -42,6 +38,18 @@ function Content() {
   }, [])
   useEffect(() => {
     fetchAll().then(setData).catch((e: Error) => setError(e.message))
+  }, [])
+  // silent refresh when the tab regains focus/visibility so HR status changes show up; failures keep the current data
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") fetchAll().then(setData).catch(() => {})
+    }
+    document.addEventListener("visibilitychange", refresh)
+    window.addEventListener("focus", refresh)
+    return () => {
+      document.removeEventListener("visibilitychange", refresh)
+      window.removeEventListener("focus", refresh)
+    }
   }, [])
 
   return (
@@ -70,6 +78,12 @@ function Content() {
                   <StatusBadge status={a.status} />
                 </div>
                 <StatusStepper status={a.status} className="mt-6 mb-1" />
+                {showClosedNotice(a) && (
+                  <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <Lock className="size-5 shrink-0 text-amber-600" />
+                    <span>ปิดรับสมัครแล้ว · ใบสมัครของคุณยังอยู่ระหว่างการพิจารณา</span>
+                  </div>
+                )}
                 {iv && (
                   <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                     <CalendarClock className="size-5 shrink-0 text-amber-600" />
@@ -85,7 +99,7 @@ function Content() {
           })}
         </ul>
       )}
-      <FormSheet app={form} onClose={() => setForm(null)} />
+      <FormDialog app={form} onClose={() => setForm(null)} />
       <DocumentsDialog app={docs} onClose={() => setDocs(null)} />
     </div>
   )
