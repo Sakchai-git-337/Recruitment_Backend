@@ -87,8 +87,8 @@ export default function ApplicationsPage() {
             </Select>
           </div>
 
-          <div className="-mx-4 mb-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <div className="flex w-max gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
+          <div className="mb-4">
+            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
               {tabs.map((t) => (
                 <button
                   key={t} type="button" role="tab" aria-selected={status === t} onClick={() => setStatus(t)}

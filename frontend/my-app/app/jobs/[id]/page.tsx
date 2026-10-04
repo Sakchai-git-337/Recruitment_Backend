@@ -63,7 +63,7 @@ export default function JobDetailPage() {
   const notFound = error instanceof ApiError && error.status === 404
 
   return (
-    <PublicShell>
+    <PublicShell rootClassName="pb-20 lg:pb-0">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <nav className="mb-6 text-sm text-slate-500">
           <Link href="/" className="hover:text-slate-900">ตำแหน่งงาน</Link>
@@ -133,6 +133,11 @@ function JobBody({ job, role, applied }: { job: Job; role: "applicant" | "recrui
         </dl>
         <div className="mt-4">{action}</div>
       </aside>
+
+      {/* mobile: the apply card is far down the page, keep the action in reach */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(15,23,42,0.06)] backdrop-blur lg:hidden">
+        {action}
+      </div>
     </div>
   )
 }

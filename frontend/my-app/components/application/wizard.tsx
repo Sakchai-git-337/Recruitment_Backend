@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { ErrorState, LoadingState } from "@/components/app/states"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ApiError, api, apiUpload } from "@/lib/api"
+import { ApiError, api, apiUpload, useUser } from "@/lib/api"
 import {
   SECTIONS, STEP_COUNT, emptyForm, validateStep,
   type ApplicationForm, type Errors,
@@ -24,7 +24,7 @@ const TITLES = SECTIONS.map((s, i) => (i === STEP_COUNT - 1 ? "เอกสา�
 const JOB_ONLY = ["expected_salary", "available_start_date"] // never prefilled
 const CONSENT_KEYS = ["pdpa_consent", "signature_name"]
 const NO_DRAFT = ["national_id", ...CONSENT_KEYS]
-const draftKey = (id: string) => `apply-draft-${id}`
+const draftKey = (userId: number | undefined, jobId: string) => `apply-draft-${userId ?? 0}-${jobId}`
 
 type Phase = "loading" | "error" | "ready" | "applied" | "closed" | "done"
 
@@ -34,9 +34,9 @@ function isClosed(j: Job) {
   return j.status !== "open" || (!!j.closing_date && j.closing_date < today)
 }
 
-function readDraft(id: string): ApplicationForm | null {
+function readDraft(key: string): ApplicationForm | null {
   try {
-    const raw = localStorage.getItem(draftKey(id))
+    const raw = localStorage.getItem(key)
     const v = raw ? JSON.parse(raw) : null
     return v && typeof v === "object" ? v : null
   } catch {
@@ -65,6 +65,8 @@ function scrollToError(errs: Errors) {
 }
 
 export function ApplicationWizard({ jobId }: { jobId: string }) {
+  const user = useUser()
+  const dkey = draftKey(user?.user_id, jobId)
   const [phase, setPhase] = useState<Phase>("loading")
   const [attempt, setAttempt] = useState(0)
   const [job, setJob] = useState<Job | null>(null)
@@ -76,6 +78,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    if (user === undefined) return // session not read yet
     let live = true
     Promise.all([
       api<Job>(`/jobs/${jobId}`),
@@ -88,24 +91,24 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
         if (apps.some((a) => a.job_id === j.job_id)) return setPhase("applied")
         if (isClosed(j)) return setPhase("closed")
         // prefill first, then the draft on top, so typed values always win
-        const draft = readDraft(jobId)
+        const draft = readDraft(dkey)
         setForm(merge(merge(emptyForm(), prefill?.data ?? null, [...JOB_ONLY, ...CONSENT_KEYS, ...Object.keys(draft ?? {})]), draft))
         setPhase("ready")
       })
       .catch(() => live && setPhase("error"))
     return () => { live = false }
-  }, [jobId, attempt])
+  }, [jobId, attempt, dkey, user])
 
   // autosave draft (not the national ID, not files)
   useEffect(() => {
     if (phase !== "ready") return
     try {
       const rest = Object.fromEntries(Object.entries(form).filter(([k]) => !NO_DRAFT.includes(k)))
-      localStorage.setItem(draftKey(jobId), JSON.stringify(rest))
+      localStorage.setItem(dkey, JSON.stringify(rest))
     } catch {
       // storage blocked: no draft
     }
-  }, [form, phase, jobId])
+  }, [form, phase, dkey])
 
   const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -151,7 +154,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     setSubmitting(true)
     try {
       await apiUpload("/applications", fd)
-      try { localStorage.removeItem(draftKey(jobId)) } catch { /* nothing stored */ }
+      try { localStorage.removeItem(dkey) } catch { /* nothing stored */ }
       setPhase("done")
       window.scrollTo({ top: 0 })
     } catch (e) {
@@ -159,7 +162,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
       else {
         const msg = e instanceof Error ? e.message : "ส่งใบสมัครไม่สำเร็จ"
         toast.error(msg)
-        const t = e instanceof ApiError && e.status === 400 ? stepForError(msg) : null
+        const t = e instanceof ApiError && e.status === 400 ? stepForError(msg, e.field) : null
         if (t) {
           const errs: Errors = t.field ? { [t.field]: msg } : {}
           setStep(t.step)

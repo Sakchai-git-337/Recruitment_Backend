@@ -93,7 +93,7 @@ export function JobForm({ job }: { job?: Job }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="mx-auto max-w-3xl space-y-6">
+    <form onSubmit={submit} noValidate className="max-w-3xl space-y-6">
       <Section title="ข้อมูลตำแหน่ง" description="ข้อมูลหลักที่ผู้สมัครจะเห็น">
         <FormField label="ชื่อตำแหน่ง" id="title" required error={errors.title} className="sm:col-span-2">
           <Input id="title" value={v.title} onChange={(e) => set("title", e.target.value)} placeholder="เช่น Frontend Developer" aria-invalid={!!errors.title} />

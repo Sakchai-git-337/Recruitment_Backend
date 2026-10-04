@@ -44,7 +44,10 @@ export default function ApplicationDetailPage() {
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
   const [tick, setTick] = useState(0)
-  const [note, setNote] = useState<string | null>(null)
+  // unsaved note text, tied to the application it was typed for (a status change reloads but keeps it)
+  const [draft, setDraft] = useState<{ id: string; text: string } | null>(null)
+  const note = draft?.id === id ? draft.text : null
+  const setNote = (text: string) => setDraft({ id, text })
   const [tab, setTab] = useState("form")
   const reload = () => setTick((t) => t + 1)
 
@@ -60,7 +63,6 @@ export default function ApplicationDetailPage() {
       .then(([app, form, docs, s, i, w]) => {
         setError("")
         setData({ app, form, docs: docs ?? [], screenings: s ?? [], interviews: i ?? [], workTests: w ?? [] })
-        setNote(null)
       })
       .catch((e: Error) => setError(e.message))
   }, [id, tick])
@@ -93,11 +95,11 @@ export default function ApplicationDetailPage() {
         breadcrumb={[{ label: "ผู้สมัคร", href: "/admin/applications" }, { label: name }]}
         title={name}
         description={app.job_title ?? `ตำแหน่ง #${app.job_id}`}
-        actions={<StatusBadge status={app.status} />}
       />
 
       <div className="rounded-xl border bg-card p-5 shadow-xs print:hidden">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-5">
+          <StatusBadge status={app.status} className="lg:order-last" />
           <div className="flex items-center gap-4">
             <Avatar className="size-14"><AvatarFallback className="bg-indigo-50 text-lg font-medium text-indigo-700">{initials(name)}</AvatarFallback></Avatar>
             <dl className="grid gap-x-8 gap-y-1.5 text-sm sm:grid-cols-2">
@@ -127,7 +129,7 @@ export default function ApplicationDetailPage() {
             </TabsList>
           </div>
           {tab === "form" && data.form && (
-            <Button type="button" variant="outline" size="sm" className="mb-2 shrink-0" onClick={() => window.print()}>
+            <Button type="button" variant="outline" size="sm" className="mb-2 hidden shrink-0 sm:inline-flex" onClick={() => window.print()}>
               <Printer className="size-4" />พิมพ์
             </Button>
           )}

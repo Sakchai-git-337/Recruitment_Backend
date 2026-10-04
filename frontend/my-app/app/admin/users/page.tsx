@@ -1,10 +1,10 @@
 "use client"
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react"
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, SearchX, Users } from "lucide-react"
 import { toast } from "sonner"
-import { api, useUser } from "@/lib/api"
+import { api, getToken, setSession, useUser } from "@/lib/api"
 import type { Role, User } from "@/lib/types"
 import { EmptyState } from "@/components/app/empty-state"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
@@ -29,9 +29,20 @@ function UsersPage() {
   const [deleting, setDeleting] = useState<User | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
 
+  const meRef = useRef(me)
+  useEffect(() => { meRef.current = me }, [me])
+
   const load = useCallback(() => {
     api<User[]>("/users")
-      .then((u) => { setUsers(u ?? []); setError(null) })
+      .then((u) => {
+        setUsers(u ?? [])
+        setError(null)
+        // HR edited their own name/email/phone: refresh the stored user so the shell is not stale
+        const cur = meRef.current
+        const fresh = cur && (u ?? []).find((x) => x.user_id === cur.user_id)
+        const token = getToken()
+        if (fresh && token && (fresh.full_name !== cur.full_name || fresh.email !== cur.email || fresh.phone !== cur.phone)) setSession(token, fresh)
+      })
       .catch((e) => setError(e instanceof Error ? e.message : "โหลดข้อมูลไม่สำเร็จ"))
   }, [])
   useEffect(load, [load])
@@ -119,7 +130,9 @@ function UsersPage() {
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
         title={`ลบผู้ใช้ ${deleting?.full_name ?? ""}?`}
-        description="ใบสมัครทั้งหมดของผู้ใช้คนนี้จะถูกลบไปด้วย และไม่สามารถกู้คืนได้"
+        description={deleting?.role === "recruitment"
+          ? "ผู้ใช้ HR ไม่สามารถลบได้ขณะที่ยังมีข้อมูลที่ตนเป็นเจ้าของ (เช่น ตำแหน่งงานที่สร้างไว้) หากไม่ต้องการให้ใช้งานต่อ ให้เปลี่ยนสิทธิ์เป็นผู้สมัครแทน"
+          : "ใบสมัครทั้งหมดของผู้ใช้นี้จะถูกลบ และไม่สามารถกู้คืนได้"}
         confirmLabel="ลบผู้ใช้"
         destructive
         onConfirm={() => deleting ? remove(deleting) : undefined}

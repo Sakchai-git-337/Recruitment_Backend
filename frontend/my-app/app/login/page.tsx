@@ -39,11 +39,11 @@ function LoginForm() {
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <FormField label="อีเมล" id="email">
+      <FormField label="อีเมล" id="email" required>
         <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
       </FormField>
-      <FormField label="รหัสผ่าน" id="password">
-        <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <FormField label="รหัสผ่าน" id="password" required>
+        <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="รหัสผ่านของคุณ" />
       </FormField>
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <Button type="submit" size="lg" className="w-full" disabled={busy}>

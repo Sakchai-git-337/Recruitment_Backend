@@ -57,7 +57,7 @@ function Content() {
       ) : (
         <ul className="space-y-4">
           {[...data.apps].sort((a, b) => b.apply_date.localeCompare(a.apply_date)).map((a) => {
-            const iv = nextInterview(a.application_id, data.interviews)
+            const iv = a.status === "rejected" || a.status === "passed" ? undefined : nextInterview(a.application_id, data.interviews)
             return (
               <li key={a.application_id} className="rounded-xl border bg-card p-5 shadow-xs sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">

@@ -5,13 +5,16 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** server key path the error is about (application submit), e.g. "education.0.level" */
+  field?: string
+  constructor(message: string, status: number, field?: string) {
     super(message)
     this.status = status
+    this.field = field
   }
 }
 
-function token(): string | null {
+export function getToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY)
   } catch {
@@ -21,7 +24,7 @@ function token(): string | null {
 
 async function send(path: string, init: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string>) }
-  const tok = token()
+  const tok = getToken()
   if (tok) headers.Authorization = `Bearer ${tok}`
   let res: Response
   try {
@@ -30,11 +33,12 @@ async function send(path: string, init: RequestInit): Promise<Response> {
     throw new ApiError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", 0)
   }
   if (res.status === 401) {
-    logout()
+    clearSession() // keep drafts: the user logs back in and continues
     if (typeof window !== "undefined" && window.location?.pathname && !window.location.pathname.startsWith("/login")) {
+      const here = window.location.pathname + (window.location.search ?? "")
       // plain navigation on purpose: api.ts is not a React module and must also drop in-memory state
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.assign("/login")
+      window.location.assign("/login?next=" + encodeURIComponent(here))
     }
   }
   return res
@@ -42,7 +46,7 @@ async function send(path: string, init: RequestInit): Promise<Response> {
 
 async function json<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => null)
-  if (!res.ok) throw new ApiError(data?.error ?? `เกิดข้อผิดพลาด (${res.status})`, res.status)
+  if (!res.ok) throw new ApiError(data?.error ?? `เกิดข้อผิดพลาด (${res.status})`, res.status, typeof data?.field === "string" ? data.field : undefined)
   return data as T
 }
 
@@ -113,8 +117,18 @@ function subscribe(cb: () => void) {
   return () => window.removeEventListener("storage", cb)
 }
 
+/** drop apply drafts; `keepUserId` keeps that user's own (drafts are keyed apply-draft-<userId>-<jobId>) */
+function clearDrafts(keepUserId?: number) {
+  const keep = keepUserId == null ? null : `apply-draft-${keepUserId}-`
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i)
+    if (k?.startsWith("apply-draft-") && !(keep && k.startsWith(keep))) localStorage.removeItem(k)
+  }
+}
+
 export function setSession(token: string, user: User) {
   try {
+    clearDrafts(user.user_id) // another user's drafts must not survive a login
     localStorage.setItem(TOKEN_KEY, token)
     localStorage.setItem(KEY, JSON.stringify(user))
   } catch {
@@ -123,18 +137,23 @@ export function setSession(token: string, user: User) {
   notify()
 }
 
-export function logout() {
+function clearSession() {
   try {
     localStorage.removeItem(KEY)
     localStorage.removeItem(TOKEN_KEY)
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i)
-      if (k?.startsWith("apply-draft-")) localStorage.removeItem(k)
-    }
   } catch {
     // nothing stored
   }
   notify()
+}
+
+export function logout() {
+  clearSession()
+  try {
+    clearDrafts()
+  } catch {
+    // nothing stored
+  }
 }
 
 /** undefined = not read yet (server render), null = not logged in */

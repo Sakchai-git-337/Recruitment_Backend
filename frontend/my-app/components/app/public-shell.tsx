@@ -63,10 +63,10 @@ function UserMenu() {
 }
 
 /** top nav + footer for every public page; pages wrap themselves in it (there is no shared public layout). */
-export function PublicShell({ children, className }: { children: React.ReactNode; className?: string }) {
+export function PublicShell({ children, className, rootClassName }: { children: React.ReactNode; className?: string; rootClassName?: string }) {
   const user = useUser()
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className={cn("flex min-h-screen flex-col bg-slate-50", rootClassName)}>
       <header className="sticky top-0 z-30 border-b bg-white/85 backdrop-blur print:hidden">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-8">

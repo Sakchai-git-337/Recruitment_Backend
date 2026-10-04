@@ -14,14 +14,17 @@ export function formatSalaryRange(min: number | null | undefined, max: number | 
   if (min != null && max != null) return `${formatMoney(min)} – ${formatMoney(max)}`
   if (min != null) return `เริ่มต้น ${formatMoney(min)}`
   if (max != null) return `สูงสุด ${formatMoney(max)}`
-  return "ไม่ระบุ"
+  return "เงินเดือนตามตกลง"
 }
+
+/** first letter of a word, skipping Thai leading vowels (เ แ โ ใ ไ) that are not a sound on their own */
+const first = (w: string) => Array.from(w.replace(/^[เแโใไ]+(?=.)/, ""))[0].toUpperCase()
 
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return "?"
-  if (parts.length === 1) return Array.from(parts[0])[0].toUpperCase()
-  return (Array.from(parts[0])[0] + Array.from(parts[parts.length - 1])[0]).toUpperCase()
+  if (parts.length === 1) return first(parts[0])
+  return first(parts[0]) + first(parts[parts.length - 1])
 }
 
 export function formatBytes(n: number): string {

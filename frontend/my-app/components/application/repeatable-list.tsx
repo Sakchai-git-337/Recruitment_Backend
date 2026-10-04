@@ -8,7 +8,7 @@ import type { Row } from "@/lib/application-form"
 export function RepeatableList({
   label, rows, makeRow, onChange, renderRow, minRows = 0, error, addLabel = "เพิ่ม",
 }: {
-  label: string
+  label: React.ReactNode
   rows: Row[]
   makeRow: () => Row
   onChange: (rows: Row[]) => void

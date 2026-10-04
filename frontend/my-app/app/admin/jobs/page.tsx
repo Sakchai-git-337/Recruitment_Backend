@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/app/page-header"
 import { EmptyState } from "@/components/app/empty-state"
 import { LoadingState, ErrorState } from "@/components/app/states"
 import { JobStatusBadge } from "@/components/app/status-badge"
+import { isJobOpen } from "@/components/public/job-utils"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
 
 type Data = { jobs: Job[]; counts: Record<number, number> }
@@ -111,7 +112,7 @@ export default function AdminJobsPage() {
                     <TableRow key={j.job_id}>
                       <TableCell className="pl-5">
                         <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-slate-900 hover:text-indigo-600">{j.title}</Link>
-                        <div className="text-xs text-slate-500">{j.department || "ไม่ระบุแผนก"}</div>
+                        {j.department && <div className="text-xs text-slate-500">{j.department}</div>}
                       </TableCell>
                       <TableCell><Badge variant="secondary">{EMPLOYMENT_TYPE_LABEL[j.employment_type]}</Badge></TableCell>
                       <TableCell className="text-slate-600">{j.location}</TableCell>
@@ -120,7 +121,7 @@ export default function AdminJobsPage() {
                         <Link href={`/admin/jobs/${j.job_id}`} className="font-medium tabular-nums text-indigo-600 hover:underline">{data.counts[j.job_id] ?? 0}</Link>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-slate-600">{j.closing_date ? formatDate(j.closing_date) : "ไม่กำหนด"}</TableCell>
-                      <TableCell><JobStatusBadge status={j.status} /></TableCell>
+                      <TableCell><JobStatusBadge status={j.status} expired={j.status === "open" && !isJobOpen(j)} /></TableCell>
                       <TableCell className="pr-4 text-right">{menu(j)}</TableCell>
                     </TableRow>
                   ))}
@@ -134,12 +135,12 @@ export default function AdminJobsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <Link href={`/admin/jobs/${j.job_id}`} className="font-medium text-slate-900">{j.title}</Link>
-                      <div className="text-xs text-slate-500">{j.department || "ไม่ระบุแผนก"} · {j.location}</div>
+                      <div className="text-xs text-slate-500">{[j.department, j.location].filter(Boolean).join(" · ")}</div>
                     </div>
                     {menu(j)}
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <JobStatusBadge status={j.status} />
+                    <JobStatusBadge status={j.status} expired={j.status === "open" && !isJobOpen(j)} />
                     <Badge variant="secondary">{EMPLOYMENT_TYPE_LABEL[j.employment_type]}</Badge>
                   </div>
                   <div className="mt-3 flex justify-between border-t pt-3 text-xs text-slate-500">

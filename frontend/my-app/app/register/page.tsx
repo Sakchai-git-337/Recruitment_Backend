@@ -55,20 +55,20 @@ function RegisterForm() {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <FormField label="ชื่อ-นามสกุล" id="full_name" required error={errors.full_name}>
-        <Input id="full_name" autoComplete="name" value={v.full_name} onChange={set("full_name")} aria-invalid={!!errors.full_name} />
+        <Input id="full_name" autoComplete="name" placeholder="สมชาย ใจดี" value={v.full_name} onChange={set("full_name")} aria-invalid={!!errors.full_name} />
       </FormField>
       <FormField label="อีเมล" id="email" required error={errors.email}>
-        <Input id="email" type="email" autoComplete="email" value={v.email} onChange={set("email")} aria-invalid={!!errors.email} />
+        <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={v.email} onChange={set("email")} aria-invalid={!!errors.email} />
       </FormField>
       <FormField label="เบอร์โทรศัพท์" id="phone" required error={errors.phone}>
-        <Input id="phone" type="tel" autoComplete="tel" value={v.phone} onChange={set("phone")} aria-invalid={!!errors.phone} />
+        <Input id="phone" type="tel" autoComplete="tel" placeholder="0812345678" value={v.phone} onChange={set("phone")} aria-invalid={!!errors.phone} />
       </FormField>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="รหัสผ่าน" id="password" required error={errors.password} hint="อย่างน้อย 6 ตัวอักษร">
-          <Input id="password" type="password" autoComplete="new-password" value={v.password} onChange={set("password")} aria-invalid={!!errors.password} />
+          <Input id="password" type="password" autoComplete="new-password" placeholder="อย่างน้อย 6 ตัวอักษร" value={v.password} onChange={set("password")} aria-invalid={!!errors.password} />
         </FormField>
         <FormField label="ยืนยันรหัสผ่าน" id="confirm" required error={errors.confirm}>
-          <Input id="confirm" type="password" autoComplete="new-password" value={v.confirm} onChange={set("confirm")} aria-invalid={!!errors.confirm} />
+          <Input id="confirm" type="password" autoComplete="new-password" placeholder="กรอกรหัสผ่านอีกครั้ง" value={v.confirm} onChange={set("confirm")} aria-invalid={!!errors.confirm} />
         </FormField>
       </div>
       <Button type="submit" size="lg" className="w-full" disabled={busy}>

@@ -67,12 +67,23 @@ function Fields({ fields, data, form }: { fields: Field[]; data: Row; form: Appl
   )
 }
 
+/** does Fields() render anything for these fields? */
+function hasContent(fields: Field[], data: Row, form: ApplicationForm): boolean {
+  return fields.some((f) => {
+    if (f.showIf && !f.showIf(form)) return false
+    const v = asRow(data)[f.key]
+    if (f.type === "list") return Array.isArray(v) && (f.fields ?? []).some((c) => v.filter(isRow).some((r) => !isEmpty(r[c.key])))
+    if (f.type === "group") return hasContent(f.fields ?? [], asRow(v), form)
+    return !isEmpty(v)
+  })
+}
+
 /** read-only render of a submitted application form (spec 6), driven by SECTIONS. Empty optional fields are hidden. */
 export function FormViewer({ data: raw, consentAt, className }: { data: ApplicationForm; consentAt?: string; className?: string }) {
   const data = asForm(raw)
   return (
     <div className={cn("space-y-4", className)}>
-      {SECTIONS.map((s) => (
+      {SECTIONS.filter((s) => hasContent(s.fields, data, data)).map((s) => (
         <section key={s.id} className="rounded-xl border bg-card p-5 shadow-xs break-inside-avoid-page print:rounded-none print:shadow-none">
           <h3 className="mb-4 border-b pb-3 text-sm font-semibold text-slate-900">{s.title}</h3>
           <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">

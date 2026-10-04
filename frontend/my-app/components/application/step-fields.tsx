@@ -107,7 +107,7 @@ export function FieldGrid({ fields, data, form, errors, prefix = "", onChange }:
           return (
             <div key={f.key} id={id} className="sm:col-span-2">
               <RepeatableList
-                label={f.label + (f.required ? " *" : "")} rows={rows} minRows={f.minRows ?? 0} error={errors[path]}
+                label={<>{f.label}{f.required && <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>}</>} rows={rows} minRows={f.minRows ?? 0} error={errors[path]}
                 makeRow={() => Object.fromEntries((f.fields ?? []).map((c) => [c.key, blankValue(c)]))}
                 onChange={(r) => onChange(f.key, r)}
                 renderRow={(row, i, patch) => (
@@ -131,7 +131,7 @@ export function FieldGrid({ fields, data, form, errors, prefix = "", onChange }:
         const age = f.key === "date_of_birth" && typeof data[f.key] === "string" ? computeAge(data[f.key] as string) : null
         return (
           <FormField key={f.key} id={id} label={f.label} required={f.required} error={errors[path]}
-            hint={age != null ? `อายุ ${age} ปี` : undefined} className={f.type === "textarea" ? "sm:col-span-2" : undefined}>
+            hint={f.type === "date" ? `(ปี ค.ศ.)${age != null ? ` อายุ ${age} ปี` : ""}` : undefined} className={f.type === "textarea" ? "sm:col-span-2" : undefined}>
             <Control f={f} id={id} value={data[f.key]} invalid={!!errors[path]} onChange={(v) => onChange(f.key, v)} />
           </FormField>
         )

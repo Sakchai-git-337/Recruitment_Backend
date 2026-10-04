@@ -3,16 +3,13 @@ import { Logo } from "@/components/app/logo"
 
 const PERKS = ["สมัครงานออนไลน์ ไม่ต้องดาวน์โหลดแบบฟอร์ม", "อัปโหลดเอกสารได้ในที่เดียว", "ติดตามสถานะใบสมัครได้ทุกขั้นตอน"]
 
-/** `?next=` must be a same-site path */
-export function safeNext(next: string | null): string | null {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null
-}
+export { safeNext } from "@/lib/safe-next"
 
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen bg-slate-50 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-50 via-indigo-100/60 to-white p-12 lg:flex">
-        <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-indigo-200/40 blur-3xl" />
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-100 via-indigo-200/60 to-indigo-50 p-12 lg:flex">
+        <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-indigo-300/40 blur-3xl" />
         <Logo />
         <div className="relative max-w-md">
           <h2 className="text-3xl leading-snug font-bold tracking-tight text-slate-900">เริ่มต้นเส้นทางอาชีพของคุณกับเรา</h2>

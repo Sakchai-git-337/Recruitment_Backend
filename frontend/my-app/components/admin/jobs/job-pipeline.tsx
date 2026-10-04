@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Lock, Users } from "lucide-react"
+import { ChevronDown, Lock, Users } from "lucide-react"
 import { api } from "@/lib/api"
 import { APP_STATUSES, APP_STATUS_LABEL, groupByStatus, type AppStatus, type Application } from "@/lib/types"
 import { formatDate, initials } from "@/lib/format"
@@ -91,7 +91,7 @@ export function JobPipeline({ jobId }: { jobId: number }) {
                   <article
                     key={a.application_id}
                     draggable={!isLocked}
-                    onDragStart={() => setDragId(a.application_id)}
+                    onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(a.application_id)); setDragId(a.application_id) }}
                     onDragEnd={() => { setDragId(null); setOver(null) }}
                     aria-busy={isLocked}
                     className={cn(
@@ -112,15 +112,18 @@ export function JobPipeline({ jobId }: { jobId: number }) {
                       </div>
                       {isLocked && <Lock className="size-3.5 text-slate-400" />}
                     </div>
+                    <div className="relative mt-3">
                     <select
                       aria-label={`ย้ายสถานะของ ${a.applicant_name ?? ""}`}
                       value={a.status}
                       disabled={isLocked}
                       onChange={(e) => void move(a, e.target.value as AppStatus)}
-                      className="mt-3 h-8 w-full rounded-md border bg-white px-2 text-xs text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
+                      className="h-9 w-full appearance-none rounded-lg border border-input bg-transparent pr-8 pl-3 text-sm text-slate-700 shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {APP_STATUSES.map((x) => <option key={x} value={x}>{APP_STATUS_LABEL[x]}</option>)}
                     </select>
+                    <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-slate-400" />
+                    </div>
                   </article>
                 )
               })}

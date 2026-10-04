@@ -1,7 +1,9 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { countByStatus, groupByStatus, type Application } from "./types.ts"
-import { api, apiUpload, logout } from "./api.ts"
+import { api, apiUpload, logout, setSession } from "./api.ts"
+import { safeNext } from "./safe-next.ts"
+import { initials } from "./format.ts"
 
 const app = (id: number, status: Application["status"]): Application => ({
   application_id: id, user_id: 1, job_id: 1, apply_date: "", status, note: "",
@@ -92,11 +94,11 @@ test("401 redirects to /login unless already there", async () => {
   const assigned: string[] = []
   globalThis.window = {
     dispatchEvent: () => true,
-    location: { pathname: "/admin", assign: (u: string) => assigned.push(u) },
+    location: { pathname: "/jobs/3/apply", search: "?a=1", assign: (u: string) => assigned.push(u) },
   } as unknown as Window & typeof globalThis
   globalThis.fetch = async () => new Response("{}", { status: 401 })
   await assert.rejects(api("/jobs"), { status: 401 })
-  assert.deepEqual(assigned, ["/login"])
+  assert.deepEqual(assigned, ["/login?next=" + encodeURIComponent("/jobs/3/apply?a=1")])
   ;(globalThis.window.location as { pathname: string }).pathname = "/login"
   await assert.rejects(api("/login"), { status: 401 })
   assert.equal(assigned.length, 1)
@@ -109,4 +111,30 @@ test("logout clears apply drafts", () => {
   globalThis.window = { dispatchEvent: () => true } as unknown as Window & typeof globalThis
   logout()
   assert.deepEqual([...m.keys()], ["other"])
+})
+
+test("401 keeps apply drafts; setSession drops other users' drafts only", async () => {
+  const m = stubStorage({ token: "t", user: "{}", "apply-draft-7-3": "{}", "apply-draft-8-3": "{}" })
+  const ls = globalThis.localStorage as unknown as { length: number; key: (i: number) => string | null }
+  ls.length = m.size
+  ls.key = (i) => [...m.keys()][i] ?? null
+  globalThis.window = { dispatchEvent: () => true } as unknown as Window & typeof globalThis
+  globalThis.fetch = async () => new Response("{}", { status: 401 })
+  await assert.rejects(api("/jobs"), { status: 401 })
+  assert.deepEqual([...m.keys()].sort(), ["apply-draft-7-3", "apply-draft-8-3"])
+  ls.length = m.size
+  setSession("t2", { user_id: 7, full_name: "a", email: "a@b.c", phone: "", role: "applicant" })
+  assert.deepEqual([...m.keys()].sort(), ["apply-draft-7-3", "token", "user"])
+})
+
+test("safeNext accepts same-site paths only", () => {
+  assert.equal(safeNext("/jobs/1/apply?x=1"), "/jobs/1/apply?x=1")
+  for (const bad of [null, "", "https://evil.com", "//evil.com", "/\\evil.com", "/a\\b", "/a\nb", "/a\tb", "/\x00"]) assert.equal(safeNext(bad), null)
+})
+
+test("initials skips Thai leading vowels", () => {
+  assert.equal(initials("เอกชัย"), "อ")
+  assert.equal(initials("แสงดาว ใจดี"), "สจ")
+  assert.equal(initials("Ann Lee"), "AL")
+  assert.equal(initials("  "), "?")
 })

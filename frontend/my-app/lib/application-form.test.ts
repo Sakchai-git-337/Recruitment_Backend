@@ -153,3 +153,19 @@ test("helpers: age, option label", () => {
   assert.equal(optionLabel(fieldByKey("marital_status")!, "married"), "สมรส")
   assert.equal(optionLabel(fieldByKey("title_th")!, "นาย"), "นาย")
 })
+
+test("date_of_birth year must be 1900..current year (CE)", () => {
+  const f = validForm()
+  for (const bad of ["2538-05-20", "1899-12-31", `${new Date().getFullYear() + 1}-01-01`]) {
+    f.date_of_birth = bad
+    assert.equal(validateStep(2, f).date_of_birth, "ปีเกิดต้องเป็น ค.ศ.")
+  }
+  f.date_of_birth = "1995-05-20"
+  assert.equal(validateStep(2, f).date_of_birth, undefined)
+})
+
+test("social_security_hospital only shows with social security", () => {
+  const f = fieldByKey("social_security_hospital")!
+  assert.equal(f.showIf?.({ social_security: "has" }), true)
+  assert.equal(f.showIf?.({ social_security: "none_or_expired" }), false)
+})

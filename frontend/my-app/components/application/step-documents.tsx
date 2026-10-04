@@ -1,12 +1,12 @@
 "use client"
 
-import { ShieldCheck } from "lucide-react"
+import { ChevronDown, ShieldCheck } from "lucide-react"
 import { FormField } from "@/components/app/form-field"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { DOC_TYPES } from "@/lib/types"
 import { formatMoney } from "@/lib/format"
-import { OPTION_LABELS, type ApplicationForm, type Errors, type Row } from "@/lib/application-form"
+import { EDUCATION_LEVELS, OPTION_LABELS, type ApplicationForm, type Errors, type Row } from "@/lib/application-form"
 import { FileDrop } from "./file-drop"
 
 export type Files = Record<string, File[]>
@@ -28,22 +28,30 @@ export function canAddFile(files: Files, type: string) {
 export function StepDocuments({ files, setFiles, errors, onReject }: {
   files: Files; setFiles: (f: Files) => void; errors: Errors; onReject: (m: string) => void
 }) {
+  const required = DOC_TYPES.filter((d) => d.required)
+  const optional = DOC_TYPES.filter((d) => !d.required)
+  const slot = (d: (typeof DOC_TYPES)[number]) => (
+    <FileDrop
+      key={d.type} id={`f-doc_${d.type}`} label={d.label} required={d.required} multiple={d.repeatable}
+      files={files[d.type] ?? []} error={errors["doc_" + d.type]} onReject={onReject}
+      canAdd={canAddFile(files, d.type)}
+      onChange={(next) => setFiles({ ...files, [d.type]: next })}
+    />
+  )
   return (
     <div id="f-docs" className="scroll-mt-24 space-y-3">
       <div>
         <h3 className="text-base font-semibold text-slate-900">เอกสารประกอบการสมัคร</h3>
         <p className="mt-0.5 text-sm text-slate-500">ต้องแนบ Resume และเอกสารวุฒิการศึกษา ส่วนเอกสารอื่นแนบเพิ่มได้ตามต้องการ</p>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {DOC_TYPES.map((d) => (
-          <FileDrop
-            key={d.type} id={`f-doc_${d.type}`} label={d.label} required={d.required} multiple={d.repeatable}
-            files={files[d.type] ?? []} error={errors["doc_" + d.type]} onReject={onReject}
-            canAdd={canAddFile(files, d.type)}
-            onChange={(next) => setFiles({ ...files, [d.type]: next })}
-          />
-        ))}
-      </div>
+      <div className="grid gap-3 lg:grid-cols-2">{required.map(slot)}</div>
+      <details className="group rounded-lg border bg-slate-50/60 open:bg-transparent" open={optional.some((d) => files[d.type]?.length) || undefined}>
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-slate-700 outline-none hover:bg-slate-50 focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-details-marker]:hidden">
+          เอกสารเพิ่มเติม (ไม่บังคับ)
+          <ChevronDown className="size-4 text-slate-500 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="grid gap-3 px-4 pb-4 lg:grid-cols-2">{optional.map(slot)}</div>
+      </details>
     </div>
   )
 }
@@ -58,12 +66,37 @@ export function StepConsent({ form, set, errors }: {
         <ShieldCheck className="size-5 text-indigo-600" />
         <h3 className="text-base font-semibold">ความยินยอมและการลงนาม</h3>
       </div>
-      <p className="text-sm leading-relaxed text-slate-600">
-        ข้าพเจ้ารับรองว่าข้อมูลที่กรอกในใบสมัครนี้เป็นความจริงทุกประการ และยินยอมให้บริษัทเก็บรวบรวม ใช้
-        และเปิดเผยข้อมูลส่วนบุคคลและเอกสารที่แนบ เพื่อวัตถุประสงค์ในการพิจารณาคัดเลือกและติดต่อกลับเกี่ยวกับการสมัครงาน
-        ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 หากตรวจพบว่าข้อมูลเป็นเท็จ
-        บริษัทมีสิทธิ์ปฏิเสธการรับเข้าทำงานหรือเลิกจ้างได้ทันที
-      </p>
+      <div tabIndex={0} aria-label="ข้อความยินยอมการเก็บและใช้ข้อมูลส่วนบุคคล"
+        className="max-h-64 space-y-3 overflow-y-auto rounded-lg border bg-white p-4 text-sm leading-relaxed text-slate-600 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <p>
+          ข้าพเจ้ายินยอมให้บริษัทเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลและเอกสารที่แนบมากับใบสมัครนี้
+          เพื่อวัตถุประสงค์ในการพิจารณาคัดเลือก ติดต่อกลับ และดำเนินการเกี่ยวกับการสมัครงาน
+          ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562
+        </p>
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            ข้าพเจ้ายินยอมโดยชัดแจ้งให้บริษัทเก็บรวบรวมและใช้ข้อมูลประวัติอาชญากรรมและข้อมูลสุขภาพของข้าพเจ้า
+            เพื่อประกอบการตรวจสอบและคัดกรองผู้สมัคร
+          </li>
+          <li>
+            ข้าพเจ้ายินยอมให้บริษัทใช้ข้อมูลเชื้อชาติและศาสนา เพื่อการยืนยันตัวตนและเพื่อการปฏิบัติต่อผู้สมัครอย่างเท่าเทียมกัน
+          </li>
+          <li>
+            ข้าพเจ้ายินยอมให้บริษัทเปิดเผยข้อมูลของข้าพเจ้าแก่บริษัทในเครือและกลุ่มบริษัท เพื่อวัตถุประสงค์ในการสรรหาบุคลากร
+          </li>
+          <li>
+            ข้าพเจ้ามีสิทธิ์ถอนความยินยอมได้ทุกเมื่อ ทั้งนี้ การถอนความยินยอมอาจมีผลต่อการพิจารณาใบสมัครของข้าพเจ้า
+          </li>
+          <li>
+            ข้าพเจ้ารับรองว่าได้แจ้งให้บุคคลที่ข้าพเจ้าระบุข้อมูลไว้ในใบสมัคร (เช่น สมาชิกในครอบครัวและผู้ติดต่อฉุกเฉิน) ทราบแล้ว
+            และได้รับความยินยอมจากบุคคลเหล่านั้นให้บริษัทเก็บรวบรวมและใช้ข้อมูลของเขาเพื่อวัตถุประสงค์ข้างต้น
+          </li>
+          <li>
+            ข้าพเจ้ารับรองว่าข้อมูลที่กรอกในใบสมัครนี้เป็นความจริงทุกประการ
+            หากตรวจพบว่าข้อมูลเป็นเท็จ บริษัทมีสิทธิ์ปฏิเสธการรับเข้าทำงานหรือเลิกจ้างได้โดยไม่ต้องจ่ายค่าชดเชยใดๆ
+          </li>
+        </ol>
+      </div>
       <label className="flex cursor-pointer items-start gap-3">
         <Checkbox
           id="f-pdpa_consent" className="mt-0.5" checked={form.pdpa_consent === true}
@@ -85,7 +118,8 @@ export function StepConsent({ form, set, errors }: {
 
 export function Review({ form, files, jobTitle }: { form: ApplicationForm; files: Files; jobTitle: string }) {
   const edu = (form.education as Row[]) ?? []
-  const last = edu[edu.length - 1]
+  const rank = (r: Row) => EDUCATION_LEVELS.indexOf(r.level as string)
+  const last = edu.reduce<Row | undefined>((best, r) => (best === undefined || rank(r) > rank(best) ? r : best), undefined)
   const fileCount = Object.values(files).reduce((s, v) => s + v.length, 0)
   const rows: [string, string][] = [
     ["ตำแหน่ง", jobTitle],

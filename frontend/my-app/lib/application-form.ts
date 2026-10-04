@@ -232,10 +232,10 @@ export const SECTIONS: Section[] = [
       text("credit_bureau_detail", "ระบุรายละเอียด", { showIf: when("credit_bureau_normal", false) }),
       bool("chronic_disease", "มีโรคประจำตัวหรือไม่", { yesNo: ["มี", "ไม่มี"] }),
       text("chronic_disease_detail", "ระบุรายละเอียด", { showIf: when("chronic_disease", true) }),
-      bool("relatives_in_company", "มีญาติทำงานในบริษัทหรือไม่", { yesNo: ["มี", "ไม่มี"] }),
+      bool("relatives_in_company", "มีญาติหรือบุคคลรู้จักทำงานในบริษัทนี้หรือไม่", { yesNo: ["มี", "ไม่มี"] }),
       text("relatives_detail", "ระบุรายละเอียด", { showIf: when("relatives_in_company", true) }),
       choice("social_security", "สิทธิประกันสังคม", opts([["has", "มีสิทธิ"], ["none_or_expired", "ไม่มี/หมดสิทธิ"]])),
-      text("social_security_hospital", "โรงพยาบาลตามสิทธิ"),
+      text("social_security_hospital", "โรงพยาบาลตามสิทธิ", { showIf: when("social_security", "has") }),
       bool("pdpa_consent", "ยินยอมให้เก็บและใช้ข้อมูลส่วนบุคคล (PDPA)", { required: true, format: "consent" }),
       text("signature_name", "ลงชื่อ (พิมพ์ชื่อ-นามสกุลของท่าน)", { required: true, format: "signature" }),
     ],
@@ -274,6 +274,9 @@ for (const f of SECTIONS.flatMap((s) => s.fields)) {
   add(f.key, f)
   for (const c of f.fields ?? []) add(`${f.key}.${c.key}`, c)
 }
+
+/** education levels, lowest to highest (the order of the `level` options) */
+export const EDUCATION_LEVELS = SECTIONS.flatMap((s) => s.fields).find((f) => f.key === "education")?.fields?.find((f) => f.key === "level")?.options?.map((o) => o.value) ?? []
 
 export function computeAge(dob: string, now = new Date()): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob ?? "")
@@ -319,6 +322,7 @@ function validateValue(f: Field, v: unknown, path: string, form: ApplicationForm
       return
     case "date":
       if (typeof v !== "string" || !isDate(v)) return err(`${f.label}ไม่ถูกต้อง`)
+      if (f.key === "date_of_birth" && (Number(v.slice(0, 4)) < 1900 || Number(v.slice(0, 4)) > new Date().getFullYear())) return err("ปีเกิดต้องเป็น ค.ศ.")
       return
     case "month":
       if (typeof v !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(v)) return err(`${f.label}ไม่ถูกต้อง`)

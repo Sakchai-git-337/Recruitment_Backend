@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/app/page-header"
 import { LoadingState, ErrorState } from "@/components/app/states"
 import { JobStatusBadge } from "@/components/app/status-badge"
+import { isJobOpen } from "@/components/public/job-utils"
 import { JobPipeline } from "@/components/admin/jobs/job-pipeline"
 
 function Meta({ icon: Icon, children }: { icon: typeof MapPin; children: React.ReactNode }) {
@@ -46,7 +47,7 @@ export default function AdminJobDetailPage({ params }: { params: Promise<{ id: s
         actions={<Button variant="outline" asChild><Link href={`/admin/jobs/${job.job_id}/edit`}><Pencil /> แก้ไข</Link></Button>}
       />
       <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border bg-card px-5 py-4 shadow-xs">
-        <JobStatusBadge status={job.status} />
+        <JobStatusBadge status={job.status} expired={job.status === "open" && !isJobOpen(job)} />
         {job.department && <Meta icon={Building2}>{job.department}</Meta>}
         <Meta icon={Briefcase}>{EMPLOYMENT_TYPE_LABEL[job.employment_type]}</Meta>
         <Meta icon={MapPin}>{job.location}</Meta>

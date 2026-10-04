@@ -22,12 +22,13 @@ export function StatusBadge({ status, className }: { status: AppStatus; classNam
   )
 }
 
-export function JobStatusBadge({ status, className }: { status: Job["status"]; className?: string }) {
-  const open = status === "open"
+/** `expired`: status is open but the closing date has passed */
+export function JobStatusBadge({ status, expired, className }: { status: Job["status"]; expired?: boolean; className?: string }) {
+  const open = status === "open" && !expired
   return (
-    <span className={cn(chip, open ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600", className)}>
-      <span className={cn("size-1.5 rounded-full", open ? "bg-emerald-500" : "bg-slate-400")} />
-      {JOB_STATUS_LABEL[status]}
+    <span className={cn(chip, expired ? "bg-amber-50 text-amber-700" : open ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600", className)}>
+      <span className={cn("size-1.5 rounded-full", expired ? "bg-amber-500" : open ? "bg-emerald-500" : "bg-slate-400")} />
+      {expired ? "หมดเขต" : JOB_STATUS_LABEL[status]}
     </span>
   )
 }

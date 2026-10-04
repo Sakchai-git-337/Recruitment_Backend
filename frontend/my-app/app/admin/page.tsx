@@ -51,7 +51,7 @@ export default function AdminHome() {
   return (
     <>
       <PageHeader title="ภาพรวม" description="สรุปการรับสมัครงานทั้งหมด" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard label="ตำแหน่งที่เปิดรับ" value={openJobs.length} icon={Briefcase} hint={`จากทั้งหมด ${jobs.length} ตำแหน่ง`} />
         <StatCard label="ผู้สมัครทั้งหมด" value={apps.length} icon={FileText} />
         <StatCard label="รอสัมภาษณ์" value={counts.interview} icon={CalendarCheck} />

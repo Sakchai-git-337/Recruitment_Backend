@@ -9,3 +9,9 @@ test("maps messages to steps", () => {
   assert.deepEqual(stepForError("กรุณาแนบ Resume / CV"), { step: 8, field: "doc_resume" })
   assert.equal(stepForError("เกิดข้อผิดพลาด"), null)
 })
+
+test("server field key path wins over the message", () => {
+  assert.deepEqual(stepForError("ข้อมูลไม่ถูกต้อง", "education.0.level"), { step: 5, field: "education.0.level" })
+  assert.deepEqual(stepForError("ข้อมูลไม่ถูกต้อง", "doc_resume"), { step: 8, field: "doc_resume" })
+  assert.deepEqual(stepForError("กรุณากรอกอีเมล", "unknown_key"), { step: 3, field: "email" })
+})
