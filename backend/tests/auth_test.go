@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -97,7 +98,9 @@ func TestLogoutAndExpiry(t *testing.T) {
 		t.Errorf("after logout: %d", w.Code)
 	}
 	tok = loginToken(t, r, "hr@x.com", "pw")
-	database.DB.Exec(context.Background(), `UPDATE sessions SET expires_at = now() - interval '1 minute'`)
+	if _, err := database.DB.Exec(context.Background(), `UPDATE sessions SET expires_at = now() - interval '1 minute'`); err != nil {
+		t.Fatal(err)
+	}
 	if w := doJSON(t, r, "GET", "/users", tok, nil); w.Code != 401 {
 		t.Errorf("expired: %d", w.Code)
 	}
@@ -161,4 +164,66 @@ func TestHRChangesPassword(t *testing.T) {
 		t.Errorf("old: %d", w.Code)
 	}
 	loginToken(t, r, "a@x.com", "new")
+}
+
+func TestDuplicateEmailAndBadRole(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	a := seedUser(t, "A", "a@x.com", "pw", "applicant")
+	tok := loginToken(t, r, "hr@x.com", "pw")
+	u := map[string]string{"full_name": "X", "email": "a@x.com", "password": "pw", "phone": "1"}
+	if w := doJSON(t, r, "POST", "/users", "", u); w.Code != 409 {
+		t.Errorf("register dup: %d", w.Code)
+	}
+	path := fmt.Sprintf("/users/%d", a.UserID)
+	if w := doJSON(t, r, "PATCH", path, tok, map[string]string{"email": "hr@x.com"}); w.Code != 409 {
+		t.Errorf("patch dup: %d", w.Code)
+	}
+	if w := doJSON(t, r, "PATCH", path, tok, map[string]string{"role": "boss"}); w.Code != 400 {
+		t.Errorf("bad role: %d", w.Code)
+	}
+}
+
+func TestBearerEdgeCases(t *testing.T) {
+	r := newTestRouter(t)
+	for _, h := range []string{"Basic x", "Bearer ", "Bearer"} {
+		req := httptest.NewRequest("GET", "/users", nil)
+		req.Header.Set("Authorization", h)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != 401 {
+			t.Errorf("%q: %d", h, w.Code)
+		}
+	}
+}
+
+func TestLogoutOnlyCurrentToken(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	a := loginToken(t, r, "hr@x.com", "pw")
+	b := loginToken(t, r, "hr@x.com", "pw")
+	doJSON(t, r, "POST", "/logout", a, nil)
+	if w := doJSON(t, r, "GET", "/users", a, nil); w.Code != 401 {
+		t.Errorf("A: %d", w.Code)
+	}
+	if w := doJSON(t, r, "GET", "/users", b, nil); w.Code != 200 {
+		t.Errorf("B: %d", w.Code)
+	}
+}
+
+func TestLongPasswordRejected(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	tok := loginToken(t, r, "hr@x.com", "pw")
+	long := strings.Repeat("a", 73)
+	u := map[string]string{"full_name": "X", "email": "x@x.com", "password": long, "phone": "1"}
+	if w := doJSON(t, r, "POST", "/users", "", u); w.Code != 400 {
+		t.Errorf("register: %d", w.Code)
+	}
+	if w := doJSON(t, r, "PATCH", "/users/1", tok, map[string]string{"password": long}); w.Code != 400 {
+		t.Errorf("patch: %d", w.Code)
+	}
+	if w := doJSON(t, r, "POST", "/login", "", map[string]string{"email": "hr@x.com", "password": ""}); w.Code != 401 {
+		t.Errorf("empty login: %d", w.Code)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"backend/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -46,13 +48,22 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if data.Password == "" {
+		httperr.Respond(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+		return
+	}
+
 	var user models.User
 	err := database.DB.QueryRow(context.Background(),
 		`SELECT user_id, full_name, email, password, phone, role FROM users WHERE email = $1`,
 		data.Email,
 	).Scan(&user.UserID, &user.FullName, &user.Email, &user.Password, &user.Phone, &user.Role)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
 		httperr.Respond(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+		return
+	}
+	if err != nil {
+		httperr.RespondDB(c, err)
 		return
 	}
 

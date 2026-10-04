@@ -133,6 +133,10 @@ func CreateUser(c *gin.Context) {
 		httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
 	}
+	if len(in.Password) > 72 {
+		httperr.Respond(c, http.StatusBadRequest, "รหัสผ่านยาวเกินไป")
+		return
+	}
 	hash, err := HashPassword(in.Password)
 	if err != nil {
 		httperr.RespondDB(c, err)
@@ -219,6 +223,10 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 	if data.Password != nil {
+		if len(*data.Password) > 72 {
+			httperr.Respond(c, http.StatusBadRequest, "รหัสผ่านยาวเกินไป")
+			return
+		}
 		h, err := HashPassword(*data.Password)
 		if err != nil {
 			httperr.RespondDB(c, err)
