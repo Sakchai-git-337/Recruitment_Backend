@@ -17,8 +17,9 @@ export function checkFile(f: File): string | null {
 }
 
 export function FileDrop({
-  label, required, multiple, files, onChange, onReject, canAdd, error,
+  id, label, required, multiple, files, onChange, onReject, canAdd, error,
 }: {
+  id?: string
   label: string
   required?: boolean
   multiple?: boolean
@@ -47,7 +48,7 @@ export function FileDrop({
   return (
     <div className="space-y-2">
       <div
-        role="button" tabIndex={0}
+        id={id} role="button" tabIndex={0}
         onClick={() => input.current?.click()}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.current?.click() } }}
         onDragOver={(e) => { e.preventDefault(); setOver(true) }}

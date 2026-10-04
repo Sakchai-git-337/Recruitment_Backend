@@ -1,0 +1,11 @@
+import { test } from "node:test"
+import assert from "node:assert/strict"
+import { stepForError } from "./application-errors.ts"
+
+test("maps messages to steps", () => {
+  assert.deepEqual(stepForError("กรุณากรอก expected_salary"), { step: 1, field: "expected_salary" })
+  assert.deepEqual(stepForError("กรุณากรอกอีเมล"), { step: 3, field: "email" })
+  assert.deepEqual(stepForError("ไฟล์ต้องเป็น PDF, JPG หรือ PNG"), { step: 8, field: undefined })
+  assert.deepEqual(stepForError("กรุณาแนบ Resume / CV"), { step: 8, field: "doc_resume" })
+  assert.equal(stepForError("เกิดข้อผิดพลาด"), null)
+})

@@ -16,12 +16,14 @@ import {
 } from "@/lib/application-form"
 import { DOC_TYPES, type Application, type Job } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { stepForError } from "@/lib/application-errors"
 import { FieldGrid } from "./step-fields"
 import { Review, StepConsent, StepDocuments, type Files } from "./step-documents"
 
 const TITLES = SECTIONS.map((s, i) => (i === STEP_COUNT - 1 ? "เอกสารและยืนยัน" : s.title))
 const JOB_ONLY = ["expected_salary", "available_start_date"] // never prefilled
 const CONSENT_KEYS = ["pdpa_consent", "signature_name"]
+const NO_DRAFT = ["national_id", ...CONSENT_KEYS]
 const draftKey = (id: string) => `apply-draft-${id}`
 
 type Phase = "loading" | "error" | "ready" | "applied" | "closed" | "done"
@@ -87,9 +89,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
         if (isClosed(j)) return setPhase("closed")
         // prefill first, then the draft on top, so typed values always win
         const draft = readDraft(jobId)
-        setForm(merge(merge(emptyForm(), prefill?.data ?? null, JOB_ONLY), draft))
-        const q = process.env.NODE_ENV !== "production" ? Number(new URLSearchParams(location.search).get("step")) : 0
-        if (q >= 1 && q <= STEP_COUNT) { setStep(q); setMaxStep(q) }
+        setForm(merge(merge(emptyForm(), prefill?.data ?? null, [...JOB_ONLY, ...CONSENT_KEYS, ...Object.keys(draft ?? {})]), draft))
         setPhase("ready")
       })
       .catch(() => live && setPhase("error"))
@@ -100,8 +100,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
   useEffect(() => {
     if (phase !== "ready") return
     try {
-      const { national_id: _omit, ...rest } = form
-      void _omit
+      const rest = Object.fromEntries(Object.entries(form).filter(([k]) => !NO_DRAFT.includes(k)))
       localStorage.setItem(draftKey(jobId), JSON.stringify(rest))
     } catch {
       // storage blocked: no draft
@@ -157,7 +156,18 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
       window.scrollTo({ top: 0 })
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) setPhase("applied")
-      else toast.error(e instanceof Error ? e.message : "ส่งใบสมัครไม่สำเร็จ")
+      else {
+        const msg = e instanceof Error ? e.message : "ส่งใบสมัครไม่สำเร็จ"
+        toast.error(msg)
+        const t = e instanceof ApiError && e.status === 400 ? stepForError(msg) : null
+        if (t) {
+          const errs: Errors = t.field ? { [t.field]: msg } : {}
+          setStep(t.step)
+          setErrors(errs)
+          if (t.field) scrollToError(errs)
+          else requestAnimationFrame(() => document.getElementById("f-docs")?.scrollIntoView({ behavior: "smooth" }))
+        }
+      }
     } finally {
       setSubmitting(false)
     }
@@ -233,6 +243,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
                   <span>คุณกำลังสมัครตำแหน่ง <b className="text-slate-900">{job?.title}</b></span>
                 </div>
               )}
+              {last && <h3 className="text-base font-semibold text-slate-900">คำถามเพิ่มเติม</h3>}
               <FieldGrid
                 fields={last ? section.fields.filter((f) => !CONSENT_KEYS.includes(f.key)) : section.fields}
                 data={form} form={form} errors={errors} onChange={set}

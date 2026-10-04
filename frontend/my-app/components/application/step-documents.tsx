@@ -29,7 +29,7 @@ export function StepDocuments({ files, setFiles, errors, onReject }: {
   files: Files; setFiles: (f: Files) => void; errors: Errors; onReject: (m: string) => void
 }) {
   return (
-    <div className="space-y-3">
+    <div id="f-docs" className="scroll-mt-24 space-y-3">
       <div>
         <h3 className="text-base font-semibold text-slate-900">เอกสารประกอบการสมัคร</h3>
         <p className="mt-0.5 text-sm text-slate-500">ต้องแนบ Resume และเอกสารวุฒิการศึกษา ส่วนเอกสารอื่นแนบเพิ่มได้ตามต้องการ</p>
@@ -37,7 +37,7 @@ export function StepDocuments({ files, setFiles, errors, onReject }: {
       <div className="grid gap-3 lg:grid-cols-2">
         {DOC_TYPES.map((d) => (
           <FileDrop
-            key={d.type} label={d.label} required={d.required} multiple={d.repeatable}
+            key={d.type} id={`f-doc_${d.type}`} label={d.label} required={d.required} multiple={d.repeatable}
             files={files[d.type] ?? []} error={errors["doc_" + d.type]} onReject={onReject}
             canAdd={canAddFile(files, d.type)}
             onChange={(next) => setFiles({ ...files, [d.type]: next })}
@@ -94,8 +94,8 @@ export function Review({ form, files, jobTitle }: { form: ApplicationForm; files
     ["อีเมล", String(form.email ?? "-")],
     ["เงินเดือนที่คาดหวัง", typeof form.expected_salary === "number" ? formatMoney(form.expected_salary) : "-"],
     ["การศึกษาสูงสุด", last ? `${OPTION_LABELS["education.level"]?.[String(last.level)] ?? ""} ${last.institute ?? ""}`.trim() || "-" : "-"],
-    ["เอกสารที่แนบ", `${fileCount} ไฟล์`],
   ]
+  const attached = DOC_TYPES.filter((d) => files[d.type]?.length)
   return (
     <div className="rounded-xl border bg-white p-5">
       <h3 className="mb-3 text-base font-semibold text-slate-900">ตรวจสอบก่อนส่ง</h3>
@@ -107,6 +107,19 @@ export function Review({ form, files, jobTitle }: { form: ApplicationForm; files
           </div>
         ))}
       </dl>
+      <div className="mt-4 border-t pt-3">
+        <p className="text-xs font-medium text-slate-500">เอกสารที่แนบ ({fileCount} ไฟล์)</p>
+        {attached.length === 0 ? <p className="mt-0.5 text-sm text-slate-900">-</p> : (
+          <ul className="mt-1 space-y-1 text-sm">
+            {attached.map((d) => (
+              <li key={d.type} className="min-w-0">
+                <span className="text-slate-500">{d.label}: </span>
+                <span className="break-words text-slate-900">{files[d.type].map((f) => f.name).join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
