@@ -3,12 +3,18 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"backend/database"
 	"backend/httperr"
+	"backend/middleware"
 	"backend/models"
 	"github.com/gin-gonic/gin"
 )
+
+func validScreeningResult(s string) bool {
+	return s == "pass" || s == "fail" || s == "pending"
+}
 
 func CreateScreening(c *gin.Context) {
 	var screening models.Screening
@@ -18,38 +24,26 @@ func CreateScreening(c *gin.Context) {
 		return
 	}
 
-	// ตรวจสอบข้อมูลที่จำเป็น
-	if screening.ApplicationID == 0 ||
-		screening.ScreenedBy == 0 ||
-		screening.Result == "" {
+	// screened_by always comes from the token, never the body
+	screening.ScreenedBy = middleware.CurrentUser(c).UserID
 
-		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ application_id, screened_by และ result")
+	if screening.ApplicationID == 0 || screening.Result == "" {
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ application_id และ result")
 		return
 	}
 
-	// ตรวจสอบผล Screening
-	if screening.Result != "pass" &&
-		screening.Result != "fail" &&
-		screening.Result != "pending" {
-
+	if !validScreeningResult(screening.Result) {
 		httperr.Respond(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
 		return
 	}
 
-	query := `
-		INSERT INTO screenings (
-			application_id,
-			screened_by,
-			result,
-			note
-		)
-		VALUES ($1, $2, $3, $4)
-		RETURNING screening_id, screening_date
-	`
-
 	err := database.DB.QueryRow(
 		context.Background(),
-		query,
+		`
+		INSERT INTO screenings (application_id, screened_by, result, note)
+		VALUES ($1, $2, $3, $4)
+		RETURNING screening_id, screening_date
+		`,
 		screening.ApplicationID,
 		screening.ScreenedBy,
 		screening.Result,
@@ -68,16 +62,23 @@ func CreateScreening(c *gin.Context) {
 }
 
 func GetScreenings(c *gin.Context) {
-	rows, err := database.DB.Query(
-		context.Background(),
-		`
+	query := `
 		SELECT screening_id, application_id, screened_by,
 		       result, note, screening_date
 		FROM screenings
-		ORDER BY screening_id
-		`,
-	)
+		WHERE 1=1`
+	args := []any{}
+	if v := c.Query("application_id"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			httperr.Respond(c, http.StatusBadRequest, "application_id ไม่ถูกต้อง")
+			return
+		}
+		args = append(args, n)
+		query += " AND application_id = $1"
+	}
 
+	rows, err := database.DB.Query(context.Background(), query+" ORDER BY screening_id", args...)
 	if err != nil {
 		httperr.RespondDB(c, err)
 		return
@@ -156,8 +157,8 @@ func UpdateScreening(c *gin.Context) {
 	}
 
 	var data struct {
-		Result string `json:"result"`
-		Note   string `json:"note"`
+		Result *string `json:"result"`
+		Note   *string `json:"note"`
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -165,15 +166,12 @@ func UpdateScreening(c *gin.Context) {
 		return
 	}
 
-	if data.Result == "" {
-		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ result")
+	if data.Result == nil && data.Note == nil {
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ result หรือ note")
 		return
 	}
 
-	if data.Result != "pass" &&
-		data.Result != "fail" &&
-		data.Result != "pending" {
-
+	if data.Result != nil && !validScreeningResult(*data.Result) {
 		httperr.Respond(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
 		return
 	}
@@ -182,8 +180,8 @@ func UpdateScreening(c *gin.Context) {
 		context.Background(),
 		`
 		UPDATE screenings
-		SET result = $1,
-			note = $2
+		SET result = COALESCE($1, result),
+			note = COALESCE($2, note)
 		WHERE screening_id = $3
 		`,
 		data.Result,
@@ -204,4 +202,26 @@ func UpdateScreening(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Screening updated successfully",
 	})
+}
+
+func DeleteScreening(c *gin.Context) {
+	deleteByID(c, "screenings", "screening_id", "Screening deleted successfully")
+}
+
+// deleteByID: table/col are compile-time constants from callers, never user input.
+func deleteByID(c *gin.Context, table, col, msg string) {
+	id, ok := httperr.ParseID(c)
+	if !ok {
+		return
+	}
+	result, err := database.DB.Exec(context.Background(), "DELETE FROM "+table+" WHERE "+col+" = $1", id)
+	if err != nil {
+		httperr.RespondDB(c, err)
+		return
+	}
+	if result.RowsAffected() == 0 {
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": msg})
 }
