@@ -1,4 +1,4 @@
-package main
+package tests
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"backend/httperr"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,7 +60,7 @@ func TestInternalErrorHidden(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
-	respondDBError(c, errors.New("secret detail"))
+	httperr.RespondDB(c, errors.New("secret detail"))
 	if w.Code != 500 || strings.Contains(w.Body.String(), "secret detail") {
 		t.Errorf("%d %s", w.Code, w.Body.String())
 	}

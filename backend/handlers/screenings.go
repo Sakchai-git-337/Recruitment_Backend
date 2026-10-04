@@ -1,27 +1,20 @@
-package main
+package handlers
 
 import (
 	"context"
 	"net/http"
-	"time"
 
+	"backend/database"
+	"backend/httperr"
+	"backend/models"
 	"github.com/gin-gonic/gin"
 )
 
-type Screening struct {
-	ScreeningID   int       `json:"screening_id"`
-	ApplicationID int       `json:"application_id"`
-	ScreenedBy    int       `json:"screened_by"`
-	Result        string    `json:"result"`
-	Note          string    `json:"note"`
-	ScreeningDate time.Time `json:"screening_date"`
-}
-
-func createScreening(c *gin.Context) {
-	var screening Screening
+func CreateScreening(c *gin.Context) {
+	var screening models.Screening
 
 	if err := c.ShouldBindJSON(&screening); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -30,7 +23,7 @@ func createScreening(c *gin.Context) {
 		screening.ScreenedBy == 0 ||
 		screening.Result == "" {
 
-		respondError(c, http.StatusBadRequest, "ต้องระบุ application_id, screened_by และ result")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ application_id, screened_by และ result")
 		return
 	}
 
@@ -39,7 +32,7 @@ func createScreening(c *gin.Context) {
 		screening.Result != "fail" &&
 		screening.Result != "pending" {
 
-		respondError(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
 		return
 	}
 
@@ -54,7 +47,7 @@ func createScreening(c *gin.Context) {
 		RETURNING screening_id, screening_date
 	`
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		query,
 		screening.ApplicationID,
@@ -67,15 +60,15 @@ func createScreening(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, screening)
 }
 
-func getScreenings(c *gin.Context) {
-	rows, err := db.Query(
+func GetScreenings(c *gin.Context) {
+	rows, err := database.DB.Query(
 		context.Background(),
 		`
 		SELECT screening_id, application_id, screened_by,
@@ -86,16 +79,16 @@ func getScreenings(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	screenings := []Screening{}
+	screenings := []models.Screening{}
 
 	for rows.Next() {
-		var screening Screening
+		var screening models.Screening
 
 		err := rows.Scan(
 			&screening.ScreeningID,
@@ -107,7 +100,7 @@ func getScreenings(c *gin.Context) {
 		)
 
 		if err != nil {
-			respondDBError(c, err)
+			httperr.RespondDB(c, err)
 			return
 		}
 
@@ -115,22 +108,22 @@ func getScreenings(c *gin.Context) {
 	}
 
 	if err := rows.Err(); err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, screenings)
 }
 
-func getScreeningByID(c *gin.Context) {
-	id, ok := parseID(c)
+func GetScreeningByID(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	var screening Screening
+	var screening models.Screening
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		SELECT screening_id, application_id, screened_by,
@@ -149,15 +142,15 @@ func getScreeningByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, screening)
 }
 
-func updateScreening(c *gin.Context) {
-	id, ok := parseID(c)
+func UpdateScreening(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
@@ -168,12 +161,12 @@ func updateScreening(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if data.Result == "" {
-		respondError(c, http.StatusBadRequest, "ต้องระบุ result")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ result")
 		return
 	}
 
@@ -181,11 +174,11 @@ func updateScreening(c *gin.Context) {
 		data.Result != "fail" &&
 		data.Result != "pending" {
 
-		respondError(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "result ของการคัดกรองไม่ถูกต้อง")
 		return
 	}
 
-	result, err := db.Exec(
+	result, err := database.DB.Exec(
 		context.Background(),
 		`
 		UPDATE screenings
@@ -199,12 +192,12 @@ func updateScreening(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

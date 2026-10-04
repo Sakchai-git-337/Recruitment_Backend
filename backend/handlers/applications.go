@@ -1,28 +1,21 @@
-package main
+package handlers
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
+	"backend/database"
+	"backend/httperr"
+	"backend/models"
 	"github.com/gin-gonic/gin"
 )
 
-type Application struct {
-	ApplicationID int       `json:"application_id"`
-	UserID        int       `json:"user_id"`
-	JobID         int       `json:"job_id"`
-	ApplyDate     time.Time `json:"apply_date"`
-	Status        string    `json:"status"`
-	Note          string    `json:"note"`
-}
-
-func createApplication(c *gin.Context) {
-	var app Application
+func CreateApplication(c *gin.Context) {
+	var app models.Application
 
 	if err := c.ShouldBindJSON(&app); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -31,7 +24,7 @@ func createApplication(c *gin.Context) {
 		app.JobID == 0 ||
 		app.Status == "" {
 
-		respondError(c, http.StatusBadRequest, "ต้องระบุ user_id, job_id และ status")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ user_id, job_id และ status")
 		return
 	}
 
@@ -42,7 +35,7 @@ func createApplication(c *gin.Context) {
 		app.Status != "passed" &&
 		app.Status != "rejected" {
 
-		respondError(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
 		return
 	}
 
@@ -57,7 +50,7 @@ func createApplication(c *gin.Context) {
 		RETURNING application_id, apply_date
 	`
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		query,
 		app.UserID,
@@ -70,14 +63,14 @@ func createApplication(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, app)
 }
 
-func getApplications(c *gin.Context) {
+func GetApplications(c *gin.Context) {
 	status := c.Query("status")
 	jobID := c.Query("job_id")
 	userID := c.Query("user_id")
@@ -114,23 +107,23 @@ func getApplications(c *gin.Context) {
 
 	query += " ORDER BY application_id"
 
-	rows, err := db.Query(
+	rows, err := database.DB.Query(
 		context.Background(),
 		query,
 		args...,
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	applications := []Application{}
+	applications := []models.Application{}
 
 	for rows.Next() {
-		var app Application
+		var app models.Application
 
 		err := rows.Scan(
 			&app.ApplicationID,
@@ -142,7 +135,7 @@ func getApplications(c *gin.Context) {
 		)
 
 		if err != nil {
-			respondDBError(c, err)
+			httperr.RespondDB(c, err)
 			return
 		}
 
@@ -150,22 +143,22 @@ func getApplications(c *gin.Context) {
 	}
 
 	if err := rows.Err(); err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, applications)
 }
 
-func getApplicationByID(c *gin.Context) {
-	id, ok := parseID(c)
+func GetApplicationByID(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	var app Application
+	var app models.Application
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		SELECT application_id, user_id, job_id, apply_date, status, note
@@ -183,15 +176,15 @@ func getApplicationByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, app)
 }
 
-func updateApplication(c *gin.Context) {
-	id, ok := parseID(c)
+func UpdateApplication(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
@@ -202,12 +195,12 @@ func updateApplication(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if data.Status == "" {
-		respondError(c, http.StatusBadRequest, "ต้องระบุ status")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ status")
 		return
 	}
 
@@ -217,11 +210,11 @@ func updateApplication(c *gin.Context) {
 		data.Status != "passed" &&
 		data.Status != "rejected" {
 
-		respondError(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
 		return
 	}
 
-	result, err := db.Exec(
+	result, err := database.DB.Exec(
 		context.Background(),
 		`
 		UPDATE applications
@@ -235,12 +228,12 @@ func updateApplication(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

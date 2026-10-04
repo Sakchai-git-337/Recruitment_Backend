@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"context"
@@ -8,24 +8,20 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 )
 
-var db *pgxpool.Pool
+var DB *pgxpool.Pool
 
 //go:embed schema.sql
 var schemaSQL string
 
 func applySchema(ctx context.Context) error {
-	_, err := db.Exec(ctx, schemaSQL)
+	_, err := DB.Exec(ctx, schemaSQL)
 	return err
 }
 
-func initDB() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found")
-	}
+func Connect() {
+	var err error
 
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
@@ -44,12 +40,12 @@ func initDB() {
 		dbSSLMode,
 	)
 
-	db, err = pgxpool.New(context.Background(), dsn)
+	DB, err = pgxpool.New(context.Background(), dsn)
 	if err != nil {
 		log.Fatal("Unable to connect to database:", err)
 	}
 
-	err = db.Ping(context.Background())
+	err = DB.Ping(context.Background())
 	if err != nil {
 		log.Fatal("Database ping failed:", err)
 	}

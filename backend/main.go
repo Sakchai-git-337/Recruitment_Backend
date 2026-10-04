@@ -1,18 +1,22 @@
 // Container name : recruitment-postgres
 package main
 
-import "os"
+import (
+	"log"
+
+	"backend/config"
+	"backend/database"
+	"backend/routes"
+
+	"github.com/joho/godotenv"
+)
 
 func main() {
-	initDB()
-	defer db.Close()
-
-	r := setupRouter()
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
 	}
+	database.Connect()
+	defer database.DB.Close()
 
-	r.Run(":" + port)
+	routes.Setup().Run(":" + config.Port())
 }

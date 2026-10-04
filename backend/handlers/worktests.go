@@ -1,33 +1,26 @@
-package main
+package handlers
 
 import (
 	"context"
 	"net/http"
-	"time"
 
+	"backend/database"
+	"backend/httperr"
+	"backend/models"
 	"github.com/gin-gonic/gin"
 )
 
-type WorkTest struct {
-	TestID        int       `json:"test_id"`
-	ApplicationID int       `json:"application_id"`
-	AssignedBy    int       `json:"assigned_by"`
-	TestDate      time.Time `json:"test_date"`
-	TestResult    string    `json:"test_result"`
-	TestNote      string    `json:"test_note"`
-}
-
-func createWorkTest(c *gin.Context) {
-	var test WorkTest
+func CreateWorkTest(c *gin.Context) {
+	var test models.WorkTest
 
 	if err := c.ShouldBindJSON(&test); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if test.ApplicationID == 0 ||
 		test.AssignedBy == 0 {
-		respondError(c, http.StatusBadRequest, "ต้องระบุ application_id และ assigned_by")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ application_id และ assigned_by")
 		return
 	}
 
@@ -43,7 +36,7 @@ func createWorkTest(c *gin.Context) {
 		RETURNING test_id
 	`
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		query,
 		test.ApplicationID,
@@ -54,15 +47,15 @@ func createWorkTest(c *gin.Context) {
 	).Scan(&test.TestID)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, test)
 }
 
-func getWorkTests(c *gin.Context) {
-	rows, err := db.Query(
+func GetWorkTests(c *gin.Context) {
+	rows, err := database.DB.Query(
 		context.Background(),
 		`
 		SELECT test_id, application_id, assigned_by,
@@ -73,16 +66,16 @@ func getWorkTests(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	tests := []WorkTest{}
+	tests := []models.WorkTest{}
 
 	for rows.Next() {
-		var test WorkTest
+		var test models.WorkTest
 
 		err := rows.Scan(
 			&test.TestID,
@@ -94,7 +87,7 @@ func getWorkTests(c *gin.Context) {
 		)
 
 		if err != nil {
-			respondDBError(c, err)
+			httperr.RespondDB(c, err)
 			return
 		}
 
@@ -102,22 +95,22 @@ func getWorkTests(c *gin.Context) {
 	}
 
 	if err := rows.Err(); err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, tests)
 }
 
-func getWorkTestByID(c *gin.Context) {
-	id, ok := parseID(c)
+func GetWorkTestByID(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	var test WorkTest
+	var test models.WorkTest
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		SELECT test_id, application_id, assigned_by,
@@ -136,15 +129,15 @@ func getWorkTestByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, test)
 }
 
-func updateWorkTest(c *gin.Context) {
-	id, ok := parseID(c)
+func UpdateWorkTest(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
@@ -155,12 +148,12 @@ func updateWorkTest(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
 	if data.TestResult == "" {
-		respondError(c, http.StatusBadRequest, "ต้องระบุ test_result")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ test_result")
 		return
 	}
 
@@ -168,11 +161,11 @@ func updateWorkTest(c *gin.Context) {
 		data.TestResult != "fail" &&
 		data.TestResult != "pending" {
 
-		respondError(c, http.StatusBadRequest, "test_result ไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "test_result ไม่ถูกต้อง")
 		return
 	}
 
-	result, err := db.Exec(
+	result, err := database.DB.Exec(
 		context.Background(),
 		`
 		UPDATE work_tests
@@ -186,12 +179,12 @@ func updateWorkTest(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

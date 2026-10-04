@@ -1,28 +1,20 @@
-package main
+package handlers
 
 import (
 	"context"
 	"net/http"
 
+	"backend/database"
+	"backend/httperr"
+	"backend/models"
 	"github.com/gin-gonic/gin"
 )
 
-type Interview struct {
-	InterviewID   int    `json:"interview_id"`
-	ApplicationID int    `json:"application_id"`
-	InterviewerID int    `json:"interviewer_id"`
-	InterviewDate string `json:"interview_date"`
-	InterviewTime string `json:"interview_time"`
-	Status        string `json:"status"`
-	Result        string `json:"result"`
-	Note          string `json:"note"`
-}
-
-func createInterview(c *gin.Context) {
-	var interview Interview
+func CreateInterview(c *gin.Context) {
+	var interview models.Interview
 
 	if err := c.ShouldBindJSON(&interview); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -32,7 +24,7 @@ func createInterview(c *gin.Context) {
 		interview.InterviewTime == "" ||
 		interview.Status == "" {
 
-		respondError(c, http.StatusBadRequest, "ต้องระบุ application_id, interviewer_id, interview_date, interview_time และ status")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ application_id, interviewer_id, interview_date, interview_time และ status")
 		return
 	}
 
@@ -40,7 +32,7 @@ func createInterview(c *gin.Context) {
 		interview.Status != "completed" &&
 		interview.Status != "cancelled" {
 
-		respondError(c, http.StatusBadRequest, "status ของการสัมภาษณ์ไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "status ของการสัมภาษณ์ไม่ถูกต้อง")
 		return
 	}
 
@@ -58,7 +50,7 @@ func createInterview(c *gin.Context) {
 		RETURNING interview_id
 	`
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		query,
 		interview.ApplicationID,
@@ -71,15 +63,15 @@ func createInterview(c *gin.Context) {
 	).Scan(&interview.InterviewID)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, interview)
 }
 
-func getInterviews(c *gin.Context) {
-	rows, err := db.Query(
+func GetInterviews(c *gin.Context) {
+	rows, err := database.DB.Query(
 		context.Background(),
 		`
 		SELECT interview_id, application_id, interviewer_id,
@@ -91,16 +83,16 @@ func getInterviews(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	interviews := []Interview{}
+	interviews := []models.Interview{}
 
 	for rows.Next() {
-		var interview Interview
+		var interview models.Interview
 
 		err := rows.Scan(
 			&interview.InterviewID,
@@ -114,7 +106,7 @@ func getInterviews(c *gin.Context) {
 		)
 
 		if err != nil {
-			respondDBError(c, err)
+			httperr.RespondDB(c, err)
 			return
 		}
 
@@ -122,22 +114,22 @@ func getInterviews(c *gin.Context) {
 	}
 
 	if err := rows.Err(); err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, interviews)
 }
 
-func getInterviewByID(c *gin.Context) {
-	id, ok := parseID(c)
+func GetInterviewByID(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	var interview Interview
+	var interview models.Interview
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		SELECT interview_id, application_id, interviewer_id,
@@ -159,15 +151,15 @@ func getInterviewByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, interview)
 }
 
-func updateInterview(c *gin.Context) {
-	id, ok := parseID(c)
+func UpdateInterview(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
@@ -181,7 +173,7 @@ func updateInterview(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -189,7 +181,7 @@ func updateInterview(c *gin.Context) {
 		data.InterviewTime == "" ||
 		data.Status == "" {
 
-		respondError(c, http.StatusBadRequest, "ต้องระบุ interview_date, interview_time และ status")
+		httperr.Respond(c, http.StatusBadRequest, "ต้องระบุ interview_date, interview_time และ status")
 		return
 	}
 
@@ -197,11 +189,11 @@ func updateInterview(c *gin.Context) {
 		data.Status != "completed" &&
 		data.Status != "cancelled" {
 
-		respondError(c, http.StatusBadRequest, "status ของการสัมภาษณ์ไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "status ของการสัมภาษณ์ไม่ถูกต้อง")
 		return
 	}
 
-	result, err := db.Exec(
+	result, err := database.DB.Exec(
 		context.Background(),
 		`
 		UPDATE interviews
@@ -221,12 +213,12 @@ func updateInterview(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 

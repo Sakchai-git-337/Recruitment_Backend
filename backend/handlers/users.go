@@ -1,73 +1,17 @@
-package main
+package handlers
 
 import (
 	"context"
 	"net/http"
 
+	"backend/database"
+	"backend/httperr"
+	"backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
 
-type User struct {
-	UserID   int    `json:"user_id"`
-	FullName string `json:"full_name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Phone    string `json:"phone"`
-	Role     string `json:"role"`
-}
-
-func loginUser(c *gin.Context) {
-	var data struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	// รับข้อมูลจาก Frontend
-	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
-		return
-	}
-
-	var user User
-
-	// ค้นหา User จาก email
-	err := db.QueryRow(
-		context.Background(),
-		`
-		SELECT user_id, full_name, email, password, phone, role
-		FROM users
-		WHERE email = $1
-		`,
-		data.Email,
-	).Scan(
-		&user.UserID,
-		&user.FullName,
-		&user.Email,
-		&user.Password,
-		&user.Phone,
-		&user.Role,
-	)
-
-	// ไม่พบ email
-	if err != nil {
-		respondError(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-		return
-	}
-
-	// ตรวจ password
-	if user.Password != data.Password {
-		respondError(c, http.StatusUnauthorized, "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-		return
-	}
-
-	// ไม่ส่ง password กลับไป
-	user.Password = ""
-
-	c.JSON(http.StatusOK, user)
-}
-
-func getUsers(c *gin.Context) {
+func GetUsers(c *gin.Context) {
 	search := c.Query("search")
 
 	query := `
@@ -81,7 +25,7 @@ func getUsers(c *gin.Context) {
 	if search == "" {
 		query += ` ORDER BY user_id`
 
-		rows, err = db.Query(
+		rows, err = database.DB.Query(
 			context.Background(),
 			query,
 		)
@@ -93,7 +37,7 @@ func getUsers(c *gin.Context) {
 			ORDER BY user_id
 		`
 
-		rows, err = db.Query(
+		rows, err = database.DB.Query(
 			context.Background(),
 			query,
 			"%"+search+"%",
@@ -101,16 +45,16 @@ func getUsers(c *gin.Context) {
 	}
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	defer rows.Close()
 
-	users := []User{}
+	users := []models.User{}
 
 	for rows.Next() {
-		var user User
+		var user models.User
 
 		err := rows.Scan(
 			&user.UserID,
@@ -121,7 +65,7 @@ func getUsers(c *gin.Context) {
 		)
 
 		if err != nil {
-			respondDBError(c, err)
+			httperr.RespondDB(c, err)
 			return
 		}
 
@@ -129,22 +73,22 @@ func getUsers(c *gin.Context) {
 	}
 
 	if err := rows.Err(); err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, users)
 }
 
-func getUserByID(c *gin.Context) {
-	id, ok := parseID(c)
+func GetUserByID(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	var user User
+	var user models.User
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		SELECT user_id, full_name, email, phone, role
@@ -161,18 +105,18 @@ func getUserByID(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, user)
 }
 
-func createUser(c *gin.Context) {
-	var user User
+func CreateUser(c *gin.Context) {
+	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
@@ -183,13 +127,13 @@ func createUser(c *gin.Context) {
 		user.Phone == "" ||
 		user.Role == "" {
 
-		respondError(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
+		httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
 	}
 
 	// ตรวจสอบ role
 	if user.Role != "applicant" && user.Role != "recruitment" {
-		respondError(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
 		return
 	}
 
@@ -205,7 +149,7 @@ func createUser(c *gin.Context) {
 		RETURNING user_id
 	`
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		query,
 		user.FullName,
@@ -216,7 +160,7 @@ func createUser(c *gin.Context) {
 	).Scan(&user.UserID)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
@@ -226,25 +170,25 @@ func createUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
-func deleteUser(c *gin.Context) {
-	id, ok := parseID(c)
+func DeleteUser(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
 
-	result, err := db.Exec(
+	result, err := database.DB.Exec(
 		context.Background(),
 		"DELETE FROM users WHERE user_id = $1",
 		id,
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		respondError(c, http.StatusNotFound, "ไม่พบข้อมูล")
+		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
 
@@ -253,8 +197,8 @@ func deleteUser(c *gin.Context) {
 	})
 }
 
-func updateUser(c *gin.Context) {
-	id, ok := parseID(c)
+func UpdateUser(c *gin.Context) {
+	id, ok := httperr.ParseID(c)
 	if !ok {
 		return
 	}
@@ -268,13 +212,13 @@ func updateUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
-		respondError(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
+		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
-	var user User
+	var user models.User
 
-	err := db.QueryRow(
+	err := database.DB.QueryRow(
 		context.Background(),
 		`
 		UPDATE users
@@ -302,7 +246,7 @@ func updateUser(c *gin.Context) {
 	)
 
 	if err != nil {
-		respondDBError(c, err)
+		httperr.RespondDB(c, err)
 		return
 	}
 
