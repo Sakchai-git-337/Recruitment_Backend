@@ -1,0 +1,134 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { toast } from "sonner"
+import { Lock, Users } from "lucide-react"
+import { api } from "@/lib/api"
+import { APP_STATUSES, APP_STATUS_LABEL, groupByStatus, type AppStatus, type Application } from "@/lib/types"
+import { formatDate, initials } from "@/lib/format"
+import { cn } from "@/lib/utils"
+import { EmptyState } from "@/components/app/empty-state"
+import { LoadingState, ErrorState } from "@/components/app/states"
+
+const DOT: Record<AppStatus, string> = {
+  pending: "bg-slate-400", screening: "bg-sky-500", interview: "bg-amber-500", passed: "bg-emerald-500", rejected: "bg-red-500",
+}
+
+export function JobPipeline({ jobId }: { jobId: number }) {
+  const [apps, setApps] = useState<Application[] | null>(null)
+  const [error, setError] = useState("")
+  const [tick, setTick] = useState(0)
+  const [locked, setLocked] = useState<Set<number>>(new Set())
+  const [dragId, setDragId] = useState<number | null>(null)
+  const [over, setOver] = useState<AppStatus | null>(null)
+
+  useEffect(() => {
+    let live = true
+    api<Application[]>(`/applications?job_id=${jobId}`)
+      .then((a) => { if (live) { setApps(a); setError("") } })
+      .catch((e: Error) => { if (live) setError(e.message) })
+    return () => { live = false }
+  }, [jobId, tick])
+
+  function setStatus(id: number, status: AppStatus) {
+    setApps((p) => p && p.map((a) => (a.application_id === id ? { ...a, status } : a)))
+  }
+
+  async function move(app: Application, to: AppStatus) {
+    const from = app.status
+    if (from === to || locked.has(app.application_id)) return
+    const id = app.application_id
+    setStatus(id, to) // optimistic
+    setLocked((s) => new Set(s).add(id))
+    try {
+      await api(`/applications/${id}`, { method: "PATCH", body: { status: to } })
+      toast.success(`ย้ายไป "${APP_STATUS_LABEL[to]}" แล้ว`)
+    } catch (e) {
+      setStatus(id, from) // rollback
+      toast.error(e instanceof Error ? e.message : "ย้ายสถานะไม่สำเร็จ")
+    } finally {
+      setLocked((s) => { const n = new Set(s); n.delete(id); return n })
+    }
+  }
+
+  if (error) return <ErrorState message={error} onRetry={() => setTick((t) => t + 1)} />
+  if (!apps) return <LoadingState rows={6} />
+  if (apps.length === 0) return <EmptyState icon={Users} title="ยังไม่มีผู้สมัคร" text="เมื่อมีผู้สมัครตำแหน่งนี้ จะแสดงที่นี่" />
+
+  const groups = groupByStatus(apps)
+
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+      <div className="grid min-w-max grid-flow-col auto-cols-[16rem] gap-4 xl:min-w-0 xl:grid-flow-row xl:auto-cols-auto xl:grid-cols-5">
+        {APP_STATUSES.map((s) => (
+          <section
+            key={s}
+            aria-label={APP_STATUS_LABEL[s]}
+            onDragOver={(e) => { e.preventDefault(); setOver(s) }}
+            onDragLeave={() => setOver((o) => (o === s ? null : o))}
+            onDrop={(e) => {
+              e.preventDefault()
+              setOver(null)
+              const app = apps.find((a) => a.application_id === dragId)
+              if (app) void move(app, s)
+              setDragId(null)
+            }}
+            className={cn(
+              "flex min-h-48 flex-col rounded-xl border bg-slate-100/70 p-2.5 transition-colors",
+              over === s && "border-indigo-400 bg-indigo-50",
+            )}
+          >
+            <header className="mb-2.5 flex items-center gap-2 px-1.5 pt-1 text-sm font-medium text-slate-700">
+              <span className={cn("size-2 rounded-full", DOT[s])} />
+              {APP_STATUS_LABEL[s]}
+              <span className="ml-auto rounded-full bg-white px-2 text-xs tabular-nums text-slate-500 shadow-xs">{groups[s].length}</span>
+            </header>
+            <div className="flex flex-1 flex-col gap-2.5">
+              {groups[s].map((a) => {
+                const isLocked = locked.has(a.application_id)
+                return (
+                  <article
+                    key={a.application_id}
+                    draggable={!isLocked}
+                    onDragStart={() => setDragId(a.application_id)}
+                    onDragEnd={() => { setDragId(null); setOver(null) }}
+                    aria-busy={isLocked}
+                    className={cn(
+                      "rounded-lg border bg-card p-3 shadow-xs transition",
+                      isLocked ? "opacity-60" : "cursor-grab hover:shadow-sm active:cursor-grabbing",
+                      dragId === a.application_id && "opacity-40",
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
+                        {initials(a.applicant_name || "?")}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/admin/applications/${a.application_id}`} className="block truncate text-sm font-medium text-slate-900 hover:text-indigo-600">
+                          {a.applicant_name || "ไม่ระบุชื่อ"}
+                        </Link>
+                        <p className="truncate text-xs text-slate-500">สมัคร {formatDate(a.apply_date)}</p>
+                      </div>
+                      {isLocked && <Lock className="size-3.5 text-slate-400" />}
+                    </div>
+                    <select
+                      aria-label={`ย้ายสถานะของ ${a.applicant_name ?? ""}`}
+                      value={a.status}
+                      disabled={isLocked}
+                      onChange={(e) => void move(a, e.target.value as AppStatus)}
+                      className="mt-3 h-8 w-full rounded-md border bg-white px-2 text-xs text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
+                    >
+                      {APP_STATUSES.map((x) => <option key={x} value={x}>{APP_STATUS_LABEL[x]}</option>)}
+                    </select>
+                  </article>
+                )
+              })}
+              {groups[s].length === 0 && <p className="py-6 text-center text-xs text-slate-400">ไม่มีผู้สมัคร</p>}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  )
+}
