@@ -28,9 +28,10 @@ type Data = {
   interviews: Interview[]
   workTests: WorkTest[]
 }
-type Run = (fn: () => Promise<unknown>) => Promise<void>
+type Run = (fn: () => Promise<unknown>) => Promise<boolean>
 
 const day = (s: string) => s.slice(0, 10)
+const thDate = (s: string) => new Date(s).toLocaleDateString("th-TH")
 const time = (s: string) => s.slice(0, 5)
 
 function Select<T extends string>({ value, onChange, labels }: { value: T; onChange: (v: T) => void; labels: Record<T, string> }) {
@@ -47,7 +48,7 @@ function Select<T extends string>({ value, onChange, labels }: { value: T; onCha
 
 function Section({ title, empty, children, form }: { title: string; empty: boolean; children: ReactNode; form: ReactNode }) {
   return (
-    <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+    <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <h2 className="font-semibold">{title}</h2>
       {empty ? <p className="text-sm text-gray-500">ยังไม่มีข้อมูล</p> : <div className="space-y-2">{children}</div>}
       <div className="border-t border-gray-100 pt-3">{form}</div>
@@ -65,7 +66,7 @@ function ScreeningRow({ s, run, busy }: { s: Screening; run: Run; busy: boolean 
     <div className={rowClass}>
       <Select value={result} onChange={setResult} labels={RESULT_LABEL} />
       <input className={`${inputClass} lg:col-span-2`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="หมายเหตุ" />
-      <span className="self-center text-sm text-gray-500">{day(s.screening_date)}</span>
+      <span className="self-center text-sm text-gray-500">{thDate(s.screening_date)}</span>
       <Button type="button" disabled={busy} onClick={() => run(() => api(`/screenings/${s.screening_id}`, { method: "PATCH", body: { result, note } }))}>
         บันทึก
       </Button>
@@ -104,7 +105,7 @@ function WorkTestRow({ w, run, busy }: { w: WorkTest; run: Run; busy: boolean })
   const [note, setNote] = useState(w.test_note)
   return (
     <div className={rowClass}>
-      <span className="self-center text-sm text-gray-500">{day(w.test_date)}</span>
+      <span className="self-center text-sm text-gray-500">{thDate(w.test_date)}</span>
       <Select value={result} onChange={setResult} labels={RESULT_LABEL} />
       <input className={`${inputClass} lg:col-span-3`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="หมายเหตุ" />
       <Button type="button" disabled={busy} onClick={() => run(() => api(`/work-tests/${w.test_id}`, { method: "PATCH", body: { test_result: result, test_note: note } }))}>
@@ -119,7 +120,7 @@ function AddScreening({ appId, uid, run, busy }: { appId: number; uid: number; r
   const [note, setNote] = useState("")
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    run(() => api("/screenings", { method: "POST", body: { application_id: appId, screened_by: uid, result, note } })).then(() => setNote(""))
+    run(() => api("/screenings", { method: "POST", body: { application_id: appId, screened_by: uid, result, note } })).then((ok) => ok && setNote(""))
   }
   return (
     <form onSubmit={submit} className={formClass}>
@@ -141,7 +142,8 @@ function AddInterview({ appId, uid, run, busy }: { appId: number; uid: number; r
         method: "POST",
         body: { application_id: appId, interviewer_id: uid, interview_date: date, interview_time: t, status: "scheduled", result: "", note },
       }),
-    ).then(() => {
+    ).then((ok) => {
+      if (!ok) return
       setDate("")
       setT("")
       setNote("")
@@ -167,7 +169,8 @@ function AddWorkTest({ appId, uid, run, busy }: { appId: number; uid: number; ru
         method: "POST",
         body: { application_id: appId, assigned_by: uid, test_date: new Date(date).toISOString(), test_result: "pending", test_note: note },
       }),
-    ).then(() => {
+    ).then((ok) => {
+      if (!ok) return
       setDate("")
       setNote("")
     })
@@ -222,16 +225,19 @@ export default function ApplicationDetailPage() {
 
   const { app, user, job } = data
   const run: Run = async (fn) => {
+    let ok = false
     setError("")
     setBusy(true)
     try {
       await fn()
+      ok = true
       reload()
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setBusy(false)
     }
+    return ok
   }
   const save = (body: { status: AppStatus; note: string }) => run(() => api(`/applications/${id}`, { method: "PATCH", body }))
   const noteValue = note ?? app.note
@@ -245,12 +251,12 @@ export default function ApplicationDetailPage() {
       <StatusBar value={app.status} onChange={busy ? undefined : (s) => save({ status: s, note: app.note })} />
       <ErrorText message={error} />
 
-      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div><dt className="text-gray-500">อีเมล</dt><dd className="break-all">{user.email}</dd></div>
           <div><dt className="text-gray-500">เบอร์โทร</dt><dd>{user.phone}</dd></div>
           <div><dt className="text-gray-500">ตำแหน่ง</dt><dd>{job.title}</dd></div>
-          <div><dt className="text-gray-500">วันที่สมัคร</dt><dd>{day(app.apply_date)}</dd></div>
+          <div><dt className="text-gray-500">วันที่สมัคร</dt><dd>{thDate(app.apply_date)}</dd></div>
         </dl>
         <label className="block text-sm text-gray-500">
           บันทึกภายใน
