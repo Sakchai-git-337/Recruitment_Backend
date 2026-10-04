@@ -1,3 +1,3 @@
 # backend/main.go
 
-- main · function · L6-L18 — func main()
+- main · function · L14-L22 — func main()

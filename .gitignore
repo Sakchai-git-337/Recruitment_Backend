@@ -1,1 +1,11 @@
 backend/.env
+
+# graft (local code-graph tool) — per-machine, not committed
+/graft/
+/.ignore
+/AGENTS.md
+/.mcp.json
+/opencode.json
+/.claude/settings.json
+/.claude/helpers/graft-*
+/.claude/skills/graft/

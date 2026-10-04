@@ -4,4 +4,4 @@
 - ErrorText · function · L17-L24 — function ErrorText({ message }: { message: string })
 - StatusBar · function · L26-L47 — function StatusBar({ value, onChange }: { value: AppStatus; onChange?: (s: AppStatus) => void })
 - NavLink · type · L49-L49 — type NavLink = { href: string; label: string }
-- RoleGate · function · L51-L90 — function RoleGate({ role, links, children }: { role: Role; links: NavLink[]; children: ReactNode })
+- RoleGate · function · L51-L91 — function RoleGate({ role, links, children }: { role: Role; links: NavLink[]; children: ReactNode })
