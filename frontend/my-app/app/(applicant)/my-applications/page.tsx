@@ -10,12 +10,13 @@ export default function MyApplicationsPage() {
   const me = useUser()
   const [data, setData] = useState<{ apps: Application[]; jobs: Job[]; interviews: Interview[] } | null>(null)
   const [error, setError] = useState("")
+  const uid = me?.user_id
 
   useEffect(() => {
-    if (!me) return
+    if (uid === undefined) return
     let live = true
     Promise.all([
-      api<Application[] | null>(`/applications?user_id=${me.user_id}`),
+      api<Application[] | null>(`/applications?user_id=${uid}`),
       api<Job[] | null>("/jobs"),
       api<Interview[] | null>("/interviews"),
     ])
@@ -23,22 +24,19 @@ export default function MyApplicationsPage() {
         if (live) setData({ apps: a ?? [], jobs: j ?? [], interviews: i ?? [] })
       })
       .catch((e: Error) => {
-        if (live) {
-          setError(e.message)
-          setData((prev) => prev ?? { apps: [], jobs: [], interviews: [] })
-        }
+        if (live) setError(e.message)
       })
     return () => {
       live = false
     }
-  }, [me])
+  }, [uid])
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">ใบสมัครของฉัน</h1>
       <ErrorText message={error} />
       {data === null ? (
-        <Loading />
+        error ? null : <Loading />
       ) : data.apps.length === 0 ? (
         <p className="text-sm text-gray-500">
           ยังไม่ได้สมัครงาน{" "}
@@ -51,15 +49,15 @@ export default function MyApplicationsPage() {
           const job = data.jobs.find((j) => j.job_id === a.job_id)
           const meets = data.interviews.filter((i) => i.application_id === a.application_id && i.status === "scheduled")
           return (
-            <div key={a.application_id} className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+            <div key={a.application_id} className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <h2 className="font-semibold">{job?.title ?? `ตำแหน่ง #${a.job_id}`}</h2>
               <p className="text-sm text-gray-500">
-                {job?.location} · สมัครเมื่อ {a.apply_date.slice(0, 10)}
+                {job?.location ? `${job.location} · ` : ""}สมัครเมื่อ {new Date(a.apply_date).toLocaleDateString("th-TH")}
               </p>
               <StatusBar value={a.status} />
               {meets.map((i) => (
                 <p key={i.interview_id} className="text-sm text-amber-700">
-                  นัดสัมภาษณ์ {i.interview_date.slice(0, 10)} เวลา {i.interview_time.slice(0, 5)}
+                  นัดสัมภาษณ์ {new Date(i.interview_date).toLocaleDateString("th-TH")} เวลา {i.interview_time.slice(0, 5)}
                 </p>
               ))}
             </div>

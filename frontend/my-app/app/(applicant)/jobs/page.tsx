@@ -16,13 +16,14 @@ export default function JobsPage() {
   const [error, setError] = useState("")
   const [busyJobId, setBusyJobId] = useState<number | null>(null)
   const reload = () => setTick((t) => t + 1)
+  const uid = me?.user_id
 
   useEffect(() => {
-    if (!me) return
+    if (uid === undefined) return
     let live = true
     Promise.all([
       api<Job[] | null>(`/jobs?search=${encodeURIComponent(q)}`),
-      api<Application[] | null>(`/applications?user_id=${me.user_id}`),
+      api<Application[] | null>(`/applications?user_id=${uid}`),
     ])
       .then(([j, a]) => {
         if (!live) return
@@ -31,16 +32,12 @@ export default function JobsPage() {
         setError("")
       })
       .catch((e: Error) => {
-        if (live) {
-          setJobs((prev) => prev ?? [])
-          setError(e.message)
-        }
+        if (live) setError(e.message)
       })
     return () => {
       live = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me?.user_id, q, tick])
+  }, [uid, q, tick])
 
   async function apply(jobId: number) {
     if (!me) return
@@ -48,6 +45,7 @@ export default function JobsPage() {
     setBusyJobId(jobId)
     try {
       await api("/applications", { method: "POST", body: { user_id: me.user_id, job_id: jobId, status: "pending", note: "" } })
+      setApplied((prev) => new Set(prev).add(jobId)) // block re-click until refetch lands
       reload()
     } catch (e) {
       setError((e as Error).message)
@@ -71,13 +69,13 @@ export default function JobsPage() {
       </form>
       <ErrorText message={error} />
       {jobs === null ? (
-        <Loading />
+        error ? null : <Loading />
       ) : jobs.length === 0 ? (
         <p className="text-sm text-gray-500">ไม่พบงานที่เปิดรับ</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {jobs.map((j) => (
-            <div key={j.job_id} className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
+            <div key={j.job_id} className="space-y-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
               <h2 className="font-semibold">{j.title}</h2>
               <p className="text-sm text-gray-500">{j.location}</p>
               <p className="text-sm">{j.description}</p>
