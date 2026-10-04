@@ -4,7 +4,7 @@
 
 **Goal:** Split `backend/main.go` into route/resource files, add DB-session auth + role checks, fix every listed backend gap, and update the frontend to the new contract.
 
-**Architecture:** One Go `package main`, flat files. Gin router built by `setupRouter()`. Auth = random token in `sessions` table, `authRequired()` + `requireRole()` middleware. Handlers keep using the global `db *pgxpool.Pool`. Integration tests with `httptest` against DB `recruitment_test`.
+**Architecture:** Tasks 1–2 work in flat `package main` files; Task 2b moves everything into packages (`config`, `database`, `models`, `handlers`, `middleware`, `routes`, `httperr`, `tests`) per the spec's folder layout (user request). Gin router built by `routes.Setup()`. Auth = random token in `sessions` table, `middleware.AuthRequired()` + `middleware.RequireRole()`. Handlers use the package global `database.DB *pgxpool.Pool`. Integration tests with `httptest` against DB `recruitment_test`, in `backend/tests`.
 
 **Tech Stack:** Go 1.27 (only inside podman `golang:1.27`), Gin, pgx v5, `golang.org/x/crypto/bcrypt`; Next.js 16 frontend.
 
@@ -101,9 +101,48 @@ Tests (`foundation_test.go`, TDD — write first, see fail, implement):
 
 (Task 3 will change these tests to send tokens once routes require auth.)
 
+### Task 2b: Move into folders (no behavior change)
+
+**Files:** Move every `backend/*.go` (except `main.go`) and `schema.sql` into packages; create `backend/config/config.go`; delete the old flat files.
+
+Target layout (module path `backend`, e.g. `import "backend/handlers"`):
+```
+backend/
+  main.go               godotenv.Load(); database.Connect(); defer database.DB.Close(); routes.Setup().Run(":" + config.Port())
+  config/config.go      func Port() string (PORT, default "8080"); func CORSOrigins() []string (moved corsOrigins)
+  database/db.go        var DB *pgxpool.Pool; func Connect() (was initDB minus godotenv.Load; applies schema; log.Fatal on error)
+  database/schema.sql   (moved; //go:embed in db.go)
+  models/user.go job.go application.go screening.go interview.go worktest.go   structs only, exported as today (User, Job, Application, Screening, Interview, WorkTest)
+  handlers/users.go jobs.go applications.go screenings.go interviews.go worktests.go auth.go
+                        handlers exported by capitalising: GetUsers, GetUserByID, CreateUser, UpdateUser, DeleteUser, GetJobs, GetJobByID, CreateJob, UpdateJob, DeleteJob,
+                        CreateApplication, GetApplications, GetApplicationByID, UpdateApplication, CreateScreening, GetScreenings, GetScreeningByID, UpdateScreening,
+                        CreateInterview, GetInterviews, GetInterviewByID, UpdateInterview, CreateWorkTest, GetWorkTests, GetWorkTestByID, UpdateWorkTest;
+                        the unrouted loginUser moves to handlers/auth.go as Login (still unrouted)
+  httperr/httperr.go    Respond(c, status, msg), RespondDB(c, err), IsUniqueViolation(err) bool, ParseID(c) (int, bool)
+  routes/routes.go      func Setup() *gin.Engine (was setupRouter; same routes, CORS from config.CORSOrigins())
+  middleware/           (created in Task 3)
+  tests/helpers_test.go, tests/foundation_test.go   package tests; TestMain calls godotenv.Load("../.env") (test cwd is backend/tests) then the DB_NAME "_test" guard, then database.Connect(); newTestRouter returns routes.Setup(); TestInternalErrorHidden calls httperr.RespondDB
+```
+Import direction (no cycles): routes → handlers, middleware, config · handlers → middleware, httperr, database, models · middleware → database, models, httperr.
+
+- [ ] Before moving: save curl outputs of `/`, `/jobs`, `/users`, `/applications`, `/screenings`, `/interviews`, `/work-tests` (scratch dir outside repo).
+- [ ] Move code (rename only for export/package qualification; no logic edits). `gofmt -l` empty, vet+build `BUILD_OK`, `go test ./...` passes the same 5 tests (now in `backend/tests`).
+- [ ] `podman restart recruitment-backend`, wait, re-curl, `diff` identical.
+- [ ] Commit `refactor(backend): move into config/database/models/handlers/routes/httperr packages`.
+
+### Name and path mapping for Tasks 3–5 (applies everywhere below)
+
+Tasks 3–5 were written before Task 2b; read every name through this mapping:
+- `respondError`→`httperr.Respond`, `respondDBError`→`httperr.RespondDB`, `isUniqueViolation`→`httperr.IsUniqueViolation`, `parseID`→`httperr.ParseID`
+- `db`→`database.DB`, `setupRouter`→`routes.Setup`, struct `User` etc.→`models.User` etc.
+- handler `getUsers`→`handlers.GetUsers` (capitalise every handler name); `loginUser`→`handlers.Login`, `logoutUser`→`handlers.Logout`; new `deleteApplication`→`handlers.DeleteApplication`, etc.
+- `hashPassword`→`handlers.HashPassword`, `checkPassword`→`handlers.CheckPassword` (exported so tests can seed), `newToken` stays unexported in `handlers/auth.go`
+- `authRequired`→`middleware.AuthRequired`, `requireRole`→`middleware.RequireRole`, `currentUser`→`middleware.CurrentUser`, `isHR`→`middleware.IsHR` — all in `backend/middleware/auth.go`
+- file `backend/auth.go` → `backend/handlers/auth.go` (password, token, Login, Logout) + `backend/middleware/auth.go` (middleware); `backend/<resource>.go` → `backend/handlers/<resource>.go` (+ struct changes in `backend/models/<resource>.go`); `backend/routes.go` → `backend/routes/routes.go`; `backend/*_test.go` → `backend/tests/*_test.go` (package `tests`; helpers `seedUser`, `loginToken`, `newTestRouter`, `doJSON` live in `backend/tests/helpers_test.go`)
+
 ### Task 3: Auth + users
 
-**Files:** Create `backend/auth.go`, `backend/auth_test.go`; Modify `backend/users.go`, `backend/routes.go`, `backend/helpers_test.go`, `backend/foundation_test.go`.
+**Files:** Create `backend/handlers/auth.go`, `backend/middleware/auth.go`, `backend/tests/auth_test.go`; Modify `backend/handlers/users.go`, `backend/routes/routes.go`, `backend/tests/helpers_test.go`, `backend/tests/foundation_test.go`. (Names below: apply the mapping above.)
 
 **Produces (auth.go):**
 ```go
@@ -169,7 +208,7 @@ Tests (`auth_test.go`):
 
 ### Task 4: Jobs + applications
 
-**Files:** Modify `backend/jobs.go`, `backend/applications.go`, `backend/routes.go`; Create `backend/applications_test.go`.
+**Files:** Modify `backend/handlers/jobs.go`, `backend/handlers/applications.go`, `backend/models/application.go`, `backend/routes/routes.go`; Create `backend/tests/applications_test.go`. (Names below: apply the mapping above.)
 
 **jobs.go:** `createJob` — `created_by = currentUser(c).UserID` (ignore body); validate title/description/requirement/location non-empty, status open|closed. `updateJob` partial via pointer fields + COALESCE (status validated if given; `created_by` not updatable). `deleteJob` unchanged except errors.
 
@@ -188,7 +227,7 @@ Tests (`applications_test.go`): HR create job with body `created_by: 999` → st
 
 ### Task 5: Screenings, interviews, work tests
 
-**Files:** Modify `backend/screenings.go`, `backend/interviews.go`, `backend/worktests.go`, `backend/routes.go`; Create `backend/stages_test.go`.
+**Files:** Modify `backend/handlers/screenings.go`, `backend/handlers/interviews.go`, `backend/handlers/worktests.go`, `backend/routes/routes.go`; Create `backend/tests/stages_test.go`. (Names below: apply the mapping above.)
 
 - All three lists: optional `?application_id=` filter (bad int → 400); `[]` when empty.
 - `screened_by` / `interviewer_id` / `assigned_by` = `currentUser(c).UserID` (ignore body).

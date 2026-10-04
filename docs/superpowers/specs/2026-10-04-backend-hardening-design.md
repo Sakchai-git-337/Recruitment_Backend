@@ -6,8 +6,22 @@
 ## เป้าหมาย
 แก้ทุกข้อที่ขาดใน `backend/` (login route, auth, bcrypt, .env, schema, ข้อมูลรั่ว, PATCH ทับ, validation, error ดิบ, `[]`, rows.Err, go mod tidy, CORS env, tests, DELETE) + แยกไฟล์ + ปรับ frontend ให้ใช้ contract ใหม่
 
-## โครงไฟล์ (`package main` เดียว)
-`main.go` (start) · `routes.go` (`setupRouter() *gin.Engine` + สิทธิ์ต่อ route) · `db.go` (`initDB`, `applySchema`) · `schema.sql` (embed) · `httperr.go` · `auth.go` · `users.go` `jobs.go` `applications.go` `screenings.go` `interviews.go` `worktests.go` · `*_test.go` · `.env.example`
+## โครง folder (ผู้ใช้สั่งเพิ่ม: แยก folder)
+```
+backend/
+  main.go                  godotenv + database.Connect + routes.Setup + Run
+  config/config.go         Port(), CORSOrigins()
+  database/db.go           var DB *pgxpool.Pool; Connect(); applySchema (embed schema.sql)
+  database/schema.sql
+  models/                  user.go job.go application.go screening.go interview.go worktest.go (struct เท่านั้น)
+  handlers/                auth.go users.go jobs.go applications.go screenings.go interviews.go worktests.go
+  middleware/auth.go       AuthRequired(), RequireRole(), CurrentUser(), IsHR()
+  routes/routes.go         Setup() *gin.Engine + สิทธิ์ต่อ route
+  httperr/httperr.go       Respond(), RespondDB(), IsUniqueViolation(), ParseID()
+  tests/                   integration tests (package tests)
+  .env.example
+```
+module path `backend` (เช่น `import "backend/handlers"`). ทิศทาง import: routes → handlers, middleware, config · handlers → middleware, httperr, database, models · middleware → database, models · ห้าม import วน
 `.env` ออกจาก git (`git rm --cached`) + root `.gitignore` มี `backend/.env`
 
 ## Auth
