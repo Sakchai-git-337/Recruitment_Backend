@@ -1,29 +1,27 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from "next"
+import { IBM_Plex_Sans_Thai } from "next/font/google"
+import { Toaster } from "@/components/ui/sonner"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const font = IBM_Plex_Sans_Thai({
+  variable: "--font-ibm-plex-thai",
+  weight: ["400", "500", "600", "700"],
+  subsets: ["thai", "latin"],
+})
 
 export const metadata: Metadata = {
-  title: "Recruitment",
+  title: "Recruit — ร่วมงานกับเรา",
   description: "ระบบรับสมัครงาน",
-};
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="th"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="th" className={`${font.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col font-sans">
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster richColors position="top-right" />
+      </body>
     </html>
-  );
+  )
 }

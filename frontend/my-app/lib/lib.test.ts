@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { countByStatus, groupByStatus, type Application } from "./types.ts"
-import { api } from "./api.ts"
+import { api, apiUpload, logout } from "./api.ts"
 
 const app = (id: number, status: Application["status"]): Application => ({
   application_id: id, user_id: 1, job_id: 1, apply_date: "", status, note: "",
@@ -72,4 +72,41 @@ test("api: 401 clears stored token and user", async () => {
   await assert.rejects(api("/jobs"), { status: 401 })
   assert.equal(m.has("token"), false)
   assert.equal(m.has("user"), false)
+})
+
+test("apiUpload: sends FormData without JSON content type, with Bearer", async () => {
+  stubStorage({ token: "tok" })
+  let seen: RequestInit | undefined
+  globalThis.fetch = async (_url, init) => { seen = init; return new Response("{}", { status: 201 }) }
+  const fd = new FormData()
+  fd.append("job_id", "1")
+  await apiUpload("/applications", fd)
+  assert.equal(seen?.body, fd)
+  const h = seen?.headers as Record<string, string>
+  assert.equal(h.Authorization, "Bearer tok")
+  assert.equal(h["Content-Type"], undefined)
+})
+
+test("401 redirects to /login unless already there", async () => {
+  stubStorage({ token: "tok" })
+  const assigned: string[] = []
+  globalThis.window = {
+    dispatchEvent: () => true,
+    location: { pathname: "/admin", assign: (u: string) => assigned.push(u) },
+  } as unknown as Window & typeof globalThis
+  globalThis.fetch = async () => new Response("{}", { status: 401 })
+  await assert.rejects(api("/jobs"), { status: 401 })
+  assert.deepEqual(assigned, ["/login"])
+  ;(globalThis.window.location as { pathname: string }).pathname = "/login"
+  await assert.rejects(api("/login"), { status: 401 })
+  assert.equal(assigned.length, 1)
+})
+
+test("logout clears apply drafts", () => {
+  const m = stubStorage({ token: "t", user: "{}", "apply-draft-3": "{}", other: "x" })
+  ;(globalThis.localStorage as unknown as { length: number; key: (i: number) => string | null }).length = m.size
+  ;(globalThis.localStorage as unknown as { key: (i: number) => string | null }).key = (i) => [...m.keys()][i] ?? null
+  globalThis.window = { dispatchEvent: () => true } as unknown as Window & typeof globalThis
+  logout()
+  assert.deepEqual([...m.keys()], ["other"])
 })
