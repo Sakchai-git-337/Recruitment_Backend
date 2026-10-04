@@ -6,6 +6,7 @@ import (
 
 	"backend/database"
 	"backend/httperr"
+	"backend/middleware"
 	"backend/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -86,6 +87,11 @@ func GetUserByID(c *gin.Context) {
 		return
 	}
 
+	if !middleware.IsHR(c) && middleware.CurrentUser(c).UserID != id {
+		httperr.Respond(c, http.StatusForbidden, "forbidden")
+		return
+	}
+
 	var user models.User
 
 	err := database.DB.QueryRow(
@@ -113,60 +119,42 @@ func GetUserByID(c *gin.Context) {
 }
 
 func CreateUser(c *gin.Context) {
-	var user models.User
-
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var in struct {
+		FullName string `json:"full_name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+		Phone    string `json:"phone"`
+	}
+	if err := c.ShouldBindJSON(&in); err != nil {
 		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
-
-	// ตรวจสอบว่ากรอกข้อมูลครบ
-	if user.FullName == "" ||
-		user.Email == "" ||
-		user.Password == "" ||
-		user.Phone == "" ||
-		user.Role == "" {
-
+	if in.FullName == "" || in.Email == "" || in.Password == "" || in.Phone == "" {
 		httperr.Respond(c, http.StatusBadRequest, "กรุณากรอกข้อมูลให้ครบ")
 		return
 	}
-
-	// ตรวจสอบ role
-	if user.Role != "applicant" && user.Role != "recruitment" {
-		httperr.Respond(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
-		return
-	}
-
-	query := `
-		INSERT INTO users (
-			full_name,
-			email,
-			password,
-			phone,
-			role
-		)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING user_id
-	`
-
-	err := database.DB.QueryRow(
-		context.Background(),
-		query,
-		user.FullName,
-		user.Email,
-		user.Password,
-		user.Phone,
-		user.Role,
-	).Scan(&user.UserID)
-
+	hash, err := HashPassword(in.Password)
 	if err != nil {
 		httperr.RespondDB(c, err)
 		return
 	}
 
-	// ไม่ส่ง password กลับ
-	user.Password = ""
-
+	// role ถูกบังคับเป็น applicant เสมอ
+	user := models.User{FullName: in.FullName, Email: in.Email, Phone: in.Phone, Role: "applicant"}
+	err = database.DB.QueryRow(
+		context.Background(),
+		`INSERT INTO users (full_name, email, password, phone, role)
+		 VALUES ($1, $2, $3, $4, 'applicant') RETURNING user_id`,
+		in.FullName, in.Email, hash, in.Phone,
+	).Scan(&user.UserID)
+	if err != nil {
+		if httperr.IsUniqueViolation(err) {
+			httperr.Respond(c, http.StatusConflict, "อีเมลนี้ถูกใช้แล้ว")
+			return
+		}
+		httperr.RespondDB(c, err)
+		return
+	}
 	c.JSON(http.StatusCreated, user)
 }
 
@@ -204,54 +192,61 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	var data struct {
-		FullName string `json:"full_name"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Phone    string `json:"phone"`
-		Role     string `json:"role"`
+		FullName *string `json:"full_name"`
+		Email    *string `json:"email"`
+		Password *string `json:"password"`
+		Phone    *string `json:"phone"`
+		Role     *string `json:"role"`
 	}
-
 	if err := c.ShouldBindJSON(&data); err != nil {
 		httperr.Respond(c, http.StatusBadRequest, "ข้อมูลไม่ถูกต้อง")
 		return
 	}
 
-	var user models.User
-
-	err := database.DB.QueryRow(
-		context.Background(),
-		`
-		UPDATE users
-		SET full_name = $1,
-			email = $2,
-			password = $3,
-			phone = $4,
-			role = $5
-		WHERE user_id = $6
-		RETURNING user_id, full_name, email, password, phone, role
-		`,
-		data.FullName,
-		data.Email,
-		data.Password,
-		data.Phone,
-		data.Role,
-		id,
-	).Scan(
-		&user.UserID,
-		&user.FullName,
-		&user.Email,
-		&user.Password,
-		&user.Phone,
-		&user.Role,
-	)
-
-	if err != nil {
-		httperr.RespondDB(c, err)
+	if !middleware.IsHR(c) && (middleware.CurrentUser(c).UserID != id || data.Role != nil) {
+		httperr.Respond(c, http.StatusForbidden, "forbidden")
 		return
 	}
 
-	// ไม่ส่ง password กลับ
-	user.Password = ""
+	for _, f := range []*string{data.FullName, data.Email, data.Password, data.Phone, data.Role} {
+		if f != nil && *f == "" {
+			httperr.Respond(c, http.StatusBadRequest, "ห้ามเว้นว่าง")
+			return
+		}
+	}
+	if data.Role != nil && *data.Role != "applicant" && *data.Role != "recruitment" {
+		httperr.Respond(c, http.StatusBadRequest, "role ไม่ถูกต้อง")
+		return
+	}
+	if data.Password != nil {
+		h, err := HashPassword(*data.Password)
+		if err != nil {
+			httperr.RespondDB(c, err)
+			return
+		}
+		data.Password = &h
+	}
 
+	var user models.User
+	err := database.DB.QueryRow(
+		context.Background(),
+		`UPDATE users
+		 SET full_name = COALESCE($1, full_name),
+		     email     = COALESCE($2, email),
+		     password  = COALESCE($3, password),
+		     phone     = COALESCE($4, phone),
+		     role      = COALESCE($5, role)
+		 WHERE user_id = $6
+		 RETURNING user_id, full_name, email, phone, role`,
+		data.FullName, data.Email, data.Password, data.Phone, data.Role, id,
+	).Scan(&user.UserID, &user.FullName, &user.Email, &user.Phone, &user.Role)
+	if err != nil {
+		if httperr.IsUniqueViolation(err) {
+			httperr.Respond(c, http.StatusConflict, "อีเมลนี้ถูกใช้แล้ว")
+			return
+		}
+		httperr.RespondDB(c, err)
+		return
+	}
 	c.JSON(http.StatusOK, user)
 }

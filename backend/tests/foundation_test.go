@@ -14,8 +14,10 @@ import (
 
 func TestEmptyListsReturnArray(t *testing.T) {
 	r := newTestRouter(t)
-	for _, p := range []string{"/users", "/jobs", "/applications", "/screenings", "/interviews", "/work-tests"} {
-		w := doJSON(t, r, "GET", p, "", nil)
+	seedUser(t, "HR", "hr@x.com", "pw", "recruitment")
+	tok := loginToken(t, r, "hr@x.com", "pw")
+	for _, p := range []string{"/jobs", "/applications", "/screenings", "/interviews", "/work-tests"} {
+		w := doJSON(t, r, "GET", p, tok, nil)
 		if w.Code != 200 || strings.TrimSpace(w.Body.String()) != "[]" {
 			t.Errorf("%s: %d %q", p, w.Code, w.Body.String())
 		}
