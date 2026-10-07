@@ -192,3 +192,10 @@ test("postcode: optional, 5 digits when filled (present + parents)", () => {
     for (const bad of ["1011", "101100", "10a10"]) assert.deepEqual(Object.keys(validateAll({ ...f, [k]: bad })), [k])
   }
 })
+
+test("living at the parents' house hides the parents' address fields", () => {
+  for (const k of ["parents_address", "parents_subdistrict", "parents_district", "parents_province", "parents_postcode"]) {
+    assert.equal(fieldByKey(k)?.showIf?.({ residence_type: "parents" }), false, k)
+    assert.equal(fieldByKey(k)?.showIf?.({ residence_type: "rental" }), true, k)
+  }
+})

@@ -231,7 +231,9 @@ export function PrintForm({ data: f, jobTitle, docTypes, consentAt }: Props) {
             name={s(`${p}_name`)} status={s(`${p}_status`)} age={str(f[`${p}_age`])} job={s(`${p}_occupation`)} phone={s(`${p}_phone`)} />
         ))}
         <div className="sab-r">
-          <C><L th="ที่อยู่ปัจจุบันของบิดา-มารดา :" /> <V>{join(f.parents_address, f.parents_subdistrict, f.parents_district, f.parents_province, f.parents_postcode)}</V></C>
+          <C><L th="ที่อยู่ปัจจุบันของบิดา-มารดา :" /> <V>{s("residence_type") === "parents"
+            ? join(f.present_address, f.present_subdistrict, f.present_district, f.present_province, f.present_postcode)
+            : join(f.parents_address, f.parents_subdistrict, f.parents_district, f.parents_province, f.parents_postcode)}</V></C>
         </div>
         <div className="sab-r">
           <C w={58}>

@@ -58,6 +58,8 @@ const parent = (p: "father" | "mother", th: string): Field[] => [
 ]
 const married = (f: ApplicationForm) => f.marital_status === "married"
 const when = (key: string, value: unknown) => (f: ApplicationForm) => f[key] === value
+/** living at the parents' house: their address is the present address, so it isn't asked again */
+const ownParentsAddress = (f: ApplicationForm) => f.residence_type !== "parents"
 
 export const SECTIONS: Section[] = [
   {
@@ -128,11 +130,11 @@ export const SECTIONS: Section[] = [
     fields: [
       ...parent("father", "บิดา"),
       ...parent("mother", "มารดา"),
-      area("parents_address", "ที่อยู่บิดา-มารดา (บ้านเลขที่ / หมู่ / ซอย / ถนน)"),
-      text("parents_subdistrict", "ตำบล/แขวง", { widget: "thai-address" }),
-      text("parents_district", "อำเภอ/เขต"),
-      text("parents_province", "จังหวัด", { widget: "thai-province" }),
-      text("parents_postcode", "รหัสไปรษณีย์", { format: "postcode" }),
+      area("parents_address", "ที่อยู่บิดา-มารดา (บ้านเลขที่ / หมู่ / ซอย / ถนน)", { showIf: ownParentsAddress }),
+      text("parents_subdistrict", "ตำบล/แขวง", { widget: "thai-address", showIf: ownParentsAddress }),
+      text("parents_district", "อำเภอ/เขต", { showIf: ownParentsAddress }),
+      text("parents_province", "จังหวัด", { widget: "thai-province", showIf: ownParentsAddress }),
+      text("parents_postcode", "รหัสไปรษณีย์", { format: "postcode", showIf: ownParentsAddress }),
       choice("marital_status", "สถานภาพสมรส", opts([["single", "โสด"], ["married", "สมรส"], ["divorced", "หย่า"], ["widowed", "หม้าย"]])),
       text("spouse_name", "ชื่อ-นามสกุลคู่สมรส", { showIf: married }),
       choice("spouse_status", "สถานะคู่สมรส", STATUS, { showIf: married }),
