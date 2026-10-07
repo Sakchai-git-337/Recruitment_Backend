@@ -227,3 +227,6 @@
 .sab-foot { margin-top: auto; padding-top: 1.5mm; display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: 7pt; }
 .sab-foot > :nth-child(2) { text-align: center; }
 .sab-foot > :nth-child(3) { text-align: right; }
+.sab-attach { padding: 8mm 10mm; }
+.sab-attach-label { font-size: 7.5pt; color: #444; margin-bottom: 2mm; }
+.sab-attach img { flex: 1; min-height: 0; width: 100%; object-fit: contain; object-position: top center; }

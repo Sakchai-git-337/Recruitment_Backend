@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { flushSync } from "react-dom"
 import { useParams } from "next/navigation"
 import { toast } from "sonner"
-import { Calendar, Download, FileText, Mail, Phone, Printer, Briefcase } from "lucide-react"
+import { Calendar, Download, FileText, Loader2, Mail, Phone, Printer, Briefcase } from "lucide-react"
 import { api, ApiError, openDocument } from "@/lib/api"
 import {
   DOC_TYPE_LABEL,
@@ -17,6 +18,7 @@ import { EmptyState } from "@/components/app/empty-state"
 import { ErrorState, LoadingState } from "@/components/app/states"
 import { FormViewer } from "@/components/application/form-viewer"
 import { PrintForm } from "@/components/application/print-form"
+import { PrintAttachments, loadAttachments, type AttachmentPage } from "@/components/application/print-attachments"
 import { SelectionPanel, type Run } from "@/components/admin/applications/selection-panel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -50,6 +52,8 @@ export default function ApplicationDetailPage() {
   const note = draft?.id === id ? draft.text : null
   const setNote = (text: string) => setDraft({ id, text })
   const [tab, setTab] = useState("form")
+  const [attachments, setAttachments] = useState<AttachmentPage[]>([])
+  const [printing, setPrinting] = useState(false)
   const reload = () => setTick((t) => t + 1)
 
   useEffect(() => {
@@ -87,6 +91,23 @@ export default function ApplicationDetailPage() {
     }
   }
   const noteValue = note ?? app.note
+  const docs = data.docs
+
+  // the paper form followed by every uploaded document, each on its own A4 page
+  async function printWithAttachments() {
+    setPrinting(true)
+    try {
+      attachments.forEach((p) => URL.revokeObjectURL(p.src))
+      const pages = await loadAttachments(docs)
+      flushSync(() => setAttachments(pages))
+      await Promise.all(Array.from(document.querySelectorAll<HTMLImageElement>(".sab-attach img"), (i) => i.decode().catch(() => {})))
+      window.print()
+    } catch (e) {
+      toast.error(e instanceof Error ? `เตรียมเอกสารแนบไม่สำเร็จ: ${e.message}` : "เตรียมเอกสารแนบไม่สำเร็จ")
+    } finally {
+      setPrinting(false)
+    }
+  }
   const name = app.applicant_name ?? `ผู้สมัคร #${app.user_id}`
 
   return (
@@ -130,8 +151,8 @@ export default function ApplicationDetailPage() {
             </TabsList>
           </div>
           {tab === "form" && data.form && (
-            <Button type="button" variant="outline" size="sm" className="mb-2 hidden shrink-0 sm:inline-flex" onClick={() => window.print()}>
-              <Printer className="size-4" />พิมพ์
+            <Button type="button" variant="outline" size="sm" className="mb-2 hidden shrink-0 sm:inline-flex" disabled={printing} onClick={printWithAttachments}>
+              {printing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}{printing ? "กำลังเตรียมเอกสาร…" : "พิมพ์"}
             </Button>
           )}
         </div>
@@ -141,6 +162,7 @@ export default function ApplicationDetailPage() {
             <>
               <FormViewer data={data.form.data} consentAt={data.form.consent_at} className="print:hidden" />
               <PrintForm data={data.form.data} jobTitle={app.job_title} docTypes={data.docs.map((d) => d.doc_type)} consentAt={data.form.consent_at} />
+              <PrintAttachments pages={attachments} />
             </>
           ) : (
             <EmptyState icon={FileText} title="ไม่มีใบสมัครแบบออนไลน์" text="ใบสมัครนี้ถูกสร้างโดยไม่มีแบบฟอร์ม" />
