@@ -87,12 +87,12 @@ export const EMPLOYMENT_TYPE_LABEL: Record<EmploymentType, string> = {
 /** Upload slots of the application form (spec 6.9). `repeatable` = several files allowed. */
 export const DOC_TYPES: { type: string; label: string; required: boolean; repeatable?: boolean }[] = [
   { type: "resume", label: "Resume / CV", required: true },
-  { type: "education", label: "เอกสารวุฒิการศึกษา / Transcript", required: true },
-  { type: "id_card", label: "สำเนาบัตรประชาชน", required: false },
-  { type: "house_registration", label: "สำเนาทะเบียนบ้าน", required: false },
-  { type: "work_certificate", label: "หนังสือรับรองการทำงาน", required: false },
-  { type: "payslip", label: "สลิปเงินเดือนล่าสุด", required: false },
-  { type: "certificate", label: "ใบรับรอง/ใบอบรม", required: false, repeatable: true },
+  { type: "id_card", label: "สำเนาบัตรประชาชน", required: true },
+  { type: "house_registration", label: "สำเนาทะเบียนบ้าน", required: true },
+  { type: "education", label: "สำเนาวุฒิการศึกษา / Transcript", required: true },
+  { type: "work_certificate", label: "หนังสือรับรองการทำงาน (ถ้ามี)", required: false },
+  { type: "payslip", label: "สลิปเงินเดือนล่าสุด (ถ้ามี)", required: false },
+  { type: "certificate", label: "ใบรับรองต่างๆ ที่เป็นประโยชน์ต่อการพิจารณา", required: false, repeatable: true },
   { type: "marriage_certificate", label: "ทะเบียนสมรส", required: false },
   { type: "name_change", label: "หลักฐานการเปลี่ยนชื่อ-สกุล", required: false },
   { type: "military", label: "สด.9 / สด.43", required: false },

@@ -71,7 +71,8 @@ func submit(t *testing.T, r http.Handler, token string, jobID int, form map[stri
 }
 
 func goodFiles() []tfile {
-	return []tfile{{"doc_resume", "cv.pdf", pdfBytes}, {"doc_education", "deg.png", pngBytes}}
+	return []tfile{{"doc_resume", "cv.pdf", pdfBytes}, {"doc_education", "deg.png", pngBytes},
+		{"doc_id_card", "id.pdf", pdfBytes}, {"doc_house_registration", "house.pdf", pdfBytes}}
 }
 
 func count(t *testing.T, table string) int {
@@ -126,7 +127,7 @@ func TestFormSubmitAndRead(t *testing.T) {
 	if app.Status != "pending" || app.ApplicationID == 0 {
 		t.Fatal(w.Body.String())
 	}
-	if count(t, "applications") != 1 || count(t, "application_forms") != 1 || count(t, "application_documents") != 2 {
+	if count(t, "applications") != 1 || count(t, "application_forms") != 1 || count(t, "application_documents") != 4 {
 		t.Fatal("row counts")
 	}
 	id := strconv.Itoa(app.ApplicationID)
@@ -135,7 +136,7 @@ func TestFormSubmitAndRead(t *testing.T) {
 	if w := submit(t, e.r, e.ta, e.job, validForm(), goodFiles()); w.Code != 409 {
 		t.Fatal("dup", w.Code, w.Body.String())
 	}
-	if count(t, "application_documents") != 2 {
+	if count(t, "application_documents") != 4 {
 		t.Fatal("dup inserted docs")
 	}
 
@@ -153,13 +154,13 @@ func TestFormSubmitAndRead(t *testing.T) {
 			DocType    string `json:"doc_type"`
 		}
 		dec(t, w.Body.Bytes(), &docs)
-		if len(docs) != 2 || strings.Contains(w.Body.String(), `"data"`) {
+		if len(docs) != 4 || strings.Contains(w.Body.String(), `"data"`) {
 			t.Fatal("docs list", w.Body.String())
 		}
 		for _, d := range docs {
 			w := doJSON(t, e.r, "GET", "/documents/"+strconv.Itoa(d.DocumentID), tok, nil)
-			want := map[string][]byte{"resume": pdfBytes, "education": pngBytes}[d.DocType]
-			wantCT := map[string]string{"resume": "application/pdf", "education": "image/png"}[d.DocType]
+			want := map[string][]byte{"resume": pdfBytes, "education": pngBytes, "id_card": pdfBytes, "house_registration": pdfBytes}[d.DocType]
+			wantCT := map[string]string{"resume": "application/pdf", "education": "image/png", "id_card": "application/pdf", "house_registration": "application/pdf"}[d.DocType]
 			if w.Code != 200 || w.Header().Get("Content-Type") != wantCT ||
 				w.Header().Get("X-Content-Type-Options") != "nosniff" ||
 				!strings.HasPrefix(w.Header().Get("Content-Disposition"), "inline; filename*=UTF-8''") ||
@@ -266,8 +267,18 @@ func TestFormRejections(t *testing.T) {
 	f["mobile_phone"] = "12345"
 	bad("phone", f, goodFiles(), "เบอร์โทรศัพท์มือถือ ไม่ถูกต้อง", "mobile_phone")
 
-	bad("no education doc", validForm(), goodFiles()[:1], "เอกสารวุฒิการศึกษา", "doc_education")
-	bad("no resume doc", validForm(), goodFiles()[1:], "Resume", "doc_resume")
+	without := func(dt string) (out []tfile) {
+		for _, f := range goodFiles() {
+			if f.field != "doc_"+dt {
+				out = append(out, f)
+			}
+		}
+		return
+	}
+	bad("no education doc", validForm(), without("education"), "สำเนาวุฒิการศึกษา", "doc_education")
+	bad("no resume doc", validForm(), without("resume"), "Resume", "doc_resume")
+	bad("no id card", validForm(), without("id_card"), "สำเนาบัตรประชาชน", "doc_id_card")
+	bad("no house registration", validForm(), without("house_registration"), "สำเนาทะเบียนบ้าน", "doc_house_registration")
 
 	bad("fake pdf", validForm(), []tfile{{"doc_resume", "cv.pdf", []byte("just some text, not a pdf")}, goodFiles()[1]}, "PDF, JPG หรือ PNG")
 
@@ -275,7 +286,7 @@ func TestFormRejections(t *testing.T) {
 	bad("11MB", validForm(), []tfile{{"doc_resume", "cv.pdf", big}, goodFiles()[1]}, "10 MB")
 
 	many := goodFiles()
-	for i := 0; i < 14; i++ {
+	for i := len(many); i < 16; i++ {
 		many = append(many, tfile{"doc_other", "o.pdf", pdfBytes})
 	}
 	bad("16 files", validForm(), many, "15")

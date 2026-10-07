@@ -40,7 +40,7 @@ var docTypes = map[string]bool{
 	"driving_license": false, "other": true,
 }
 
-var requiredDocs = []string{"resume", "education"}
+var requiredDocs = []string{"resume", "id_card", "house_registration", "education"}
 
 var educationLevels = map[string]bool{
 	"primary": true, "lower_secondary": true, "upper_secondary": true, "vocational_cert": true,
@@ -95,7 +95,10 @@ var educationLabels = map[string]string{
 	"level": "ระดับการศึกษา", "institute": "สถาบัน", "year_to": "ปีที่จบ", "degree": "วุฒิการศึกษา", "major": "คณะ/สาขา",
 }
 
-var docLabels = map[string]string{"resume": "Resume / CV", "education": "เอกสารวุฒิการศึกษา / Transcript"}
+var docLabels = map[string]string{
+	"resume": "Resume / CV", "id_card": "สำเนาบัตรประชาชน",
+	"house_registration": "สำเนาทะเบียนบ้าน", "education": "สำเนาวุฒิการศึกษา / Transcript",
+}
 
 // validateForm returns a Thai error message and the offending key path
 // (e.g. "first_name_th", "education.0.level"); both are "" when valid.
