@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
@@ -166,6 +167,16 @@ func TestFormSubmitAndRead(t *testing.T) {
 				!strings.HasPrefix(w.Header().Get("Content-Disposition"), "inline; filename*=UTF-8''") ||
 				!bytes.Equal(w.Body.Bytes(), want) {
 				t.Fatal("doc", d.DocType, w.Code, w.Header())
+			}
+			// JSON-wrapped variant (download managers can't intercept it)
+			w = doJSON(t, e.r, "GET", "/documents/"+strconv.Itoa(d.DocumentID)+"?as=json", tok, nil)
+			var j struct{ ContentType, Data string }
+			json.Unmarshal(w.Body.Bytes(), &struct {
+				CT   *string `json:"content_type"`
+				Data *string `json:"data"`
+			}{&j.ContentType, &j.Data})
+			if got, _ := base64.StdEncoding.DecodeString(j.Data); w.Code != 200 || j.ContentType != wantCT || !bytes.Equal(got, want) {
+				t.Fatal("json doc", d.DocType, w.Code, j.ContentType)
 			}
 		}
 	}

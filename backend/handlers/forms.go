@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -454,9 +455,15 @@ func GetDocument(c *gin.Context) {
 		httperr.Respond(c, http.StatusNotFound, "ไม่พบข้อมูล")
 		return
 	}
+	noStore(c)
+	// ?as=json wraps the file in JSON: download managers (e.g. IDM) intercept raw PDF/image responses
+	// and hand the page an empty 204, which breaks in-page viewing and printing
+	if c.Query("as") == "json" {
+		c.JSON(http.StatusOK, gin.H{"filename": filename, "content_type": ct, "data": base64.StdEncoding.EncodeToString(data)})
+		return
+	}
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename*=UTF-8''%s",
 		strings.ReplaceAll(url.QueryEscape(filename), "+", "%20")))
 	c.Header("X-Content-Type-Options", "nosniff")
-	noStore(c)
 	c.DataFromReader(http.StatusOK, int64(len(data)), ct, bytes.NewReader(data), nil)
 }

@@ -90,10 +90,16 @@ export async function apiUpload<T>(path: string, formData: FormData, onProgress?
   })
 }
 
-export async function fetchBlob(path: string): Promise<Blob> {
-  const res = await send(path, {})
-  if (!res.ok) throw new ApiError(`เกิดข้อผิดพลาด (${res.status})`, res.status)
-  return res.blob()
+/**
+ * a stored document as a Blob. Fetched JSON-wrapped (base64): download managers such as IDM
+ * intercept raw PDF/image responses and give the page an empty 204 instead.
+ */
+export async function fetchDocument(id: number): Promise<Blob> {
+  const d = await api<{ content_type: string; data: string }>(`/documents/${id}?as=json`)
+  const bin = atob(d.data)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: d.content_type })
 }
 
 /** open a stored document in a new tab (blob URL, revoked after 60 s) */
@@ -102,7 +108,7 @@ export async function openDocument(id: number, filename: string): Promise<void> 
   const w = window.open("", "_blank")
   let url: string
   try {
-    url = URL.createObjectURL(await fetchBlob(`/documents/${id}`))
+    url = URL.createObjectURL(await fetchDocument(id))
   } catch (e) {
     w?.close()
     throw e

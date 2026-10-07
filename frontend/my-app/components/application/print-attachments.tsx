@@ -1,7 +1,7 @@
 "use client"
 
 // Uploaded documents appended after the paper form when printing: images as-is, PDFs rasterised page by page.
-import { fetchBlob } from "@/lib/api"
+import { fetchDocument } from "@/lib/api"
 import { DOC_TYPES, DOC_TYPE_LABEL, type ApplicationDocument } from "@/lib/types"
 
 export type AttachmentPage = { src: string; label: string }
@@ -32,7 +32,7 @@ export async function loadAttachments(docs: ApplicationDocument[]): Promise<Atta
   const sorted = [...docs].sort((a, b) => ORDER.indexOf(a.doc_type) - ORDER.indexOf(b.doc_type))
   const pages: AttachmentPage[] = []
   for (const d of sorted) {
-    const blob = await fetchBlob(`/documents/${d.document_id}`)
+    const blob = await fetchDocument(d.document_id)
     const label = `${DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type} — ${d.filename}`
     if (blob.type === "application/pdf" || d.content_type === "application/pdf") {
       const srcs = await pdfPages(blob)
