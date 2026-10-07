@@ -123,7 +123,8 @@ export function Review({ form, files, jobTitle }: { form: ApplicationForm; files
   const fileCount = Object.values(files).reduce((s, v) => s + v.length, 0)
   const rows: [string, string][] = [
     ["ตำแหน่ง", jobTitle],
-    ["ชื่อ-นามสกุล", `${form.title_th ?? ""}${form.first_name_th ?? ""} ${form.last_name_th ?? ""}`.trim()],
+    ["ชื่อ-นามสกุล (ไทย)", [form.title_th, form.first_name_th, form.last_name_th].filter(Boolean).join(" ")],
+    ["ชื่อ-นามสกุล (อังกฤษ)", [form.title_en, form.first_name_en, form.last_name_en].filter(Boolean).join(" ")],
     ["เบอร์โทรศัพท์", String(form.mobile_phone ?? "-")],
     ["อีเมล", String(form.email ?? "-")],
     ["เงินเดือนที่คาดหวัง", typeof form.expected_salary === "number" ? formatMoney(form.expected_salary) : "-"],
