@@ -28,11 +28,12 @@ func validForm() map[string]any {
 	return map[string]any{
 		"expected_salary": 30000, "available_start_date": "2026-11-01",
 		"title_th": "นาย", "first_name_th": "สมชาย", "last_name_th": "ใจดี",
+		"title_en": "Mr.", "first_name_en": "Somchai", "last_name_en": "Jaidee",
 		"date_of_birth":   "1995-05-20",
 		"present_address": "1 ถนน", "present_province": "กรุงเทพ",
 		"mobile_phone": "0812345678", "email": "a@t.com",
 		"education":       []any{map[string]any{"level": "bachelor", "institute": "CU", "year_to": 2560, "degree": "วท.บ.", "major": "CS"}},
-		"relevant_skills": "Go", "has_work_experience": false, "years_of_experience": 0,
+		"relevant_skills": "Go", "has_work_experience": false, "years_of_experience": "0",
 		"pdpa_consent": true, "signature_name": "สมชาย ใจดี",
 	}
 }
@@ -220,6 +221,18 @@ func TestFormRejections(t *testing.T) {
 	f := validForm()
 	delete(f, "first_name_th")
 	bad("missing key", f, goodFiles(), "กรุณากรอก ชื่อ (ไทย)", "first_name_th")
+
+	f = validForm()
+	f["first_name_th"] = "jasmin"
+	bad("thai name", f, goodFiles(), "อักษรภาษาไทย", "first_name_th")
+
+	f = validForm()
+	f["last_name_en"] = "ใจดี"
+	bad("english name", f, goodFiles(), "อักษรภาษาอังกฤษ", "last_name_en")
+
+	f = validForm()
+	f["education"] = []any{map[string]any{"level": "bachelor", "institute": "123123", "year_to": 2560, "degree": "x", "major": "y"}}
+	bad("institute digits", f, goodFiles(), "ตัวอักษรเท่านั้น", "education.0.institute")
 
 	f = validForm()
 	f["pdpa_consent"] = false

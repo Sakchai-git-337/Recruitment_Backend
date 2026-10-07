@@ -49,6 +49,13 @@ var educationLevels = map[string]bool{
 
 var phoneRE = regexp.MustCompile(`^[0-9]{9,10}$`)
 
+// name/institute fields accept letters only (spaces and . ( ) - allowed as separators)
+var (
+	thaiNameRE = regexp.MustCompile(`^[ก-๏\s.\-]+$`)
+	engNameRE  = regexp.MustCompile(`^[A-Za-z\s.'\-]+$`)
+	lettersRE  = regexp.MustCompile(`^[ก-๏A-Za-z\s.()\-]+$`)
+)
+
 type upload struct {
 	docType, filename, contentType string
 	data                           []byte
@@ -76,6 +83,7 @@ func stripSpace(s string) string {
 // formLabels are the Thai labels (spec 6) of the required keys.
 var formLabels = map[string]string{
 	"title_th": "คำนำหน้า (ไทย)", "first_name_th": "ชื่อ (ไทย)", "last_name_th": "นามสกุล (ไทย)",
+	"title_en": "คำนำหน้า (อังกฤษ)", "first_name_en": "ชื่อ (อังกฤษ)", "last_name_en": "นามสกุล (อังกฤษ)",
 	"date_of_birth": "วันเกิด", "present_address": "ที่อยู่ปัจจุบัน", "present_province": "จังหวัด",
 	"mobile_phone": "เบอร์โทรศัพท์มือถือ", "email": "อีเมล", "relevant_skills": "ทักษะที่เกี่ยวข้องกับตำแหน่ง",
 	"signature_name": "ลงชื่อ", "expected_salary": "เงินเดือนที่คาดหวัง", "available_start_date": "วันที่เริ่มงานได้",
@@ -93,10 +101,20 @@ var docLabels = map[string]string{"resume": "Resume / CV", "education": "เอ�
 // (e.g. "first_name_th", "education.0.level"); both are "" when valid.
 func validateForm(f map[string]any) (msg, field string) {
 	missing := func(k string) (string, string) { return "กรุณากรอก " + formLabels[k], k }
-	for _, k := range []string{"title_th", "first_name_th", "last_name_th", "date_of_birth",
+	for _, k := range []string{"title_th", "first_name_th", "last_name_th", "title_en", "first_name_en", "last_name_en", "date_of_birth",
 		"present_address", "present_province", "mobile_phone", "email", "relevant_skills", "signature_name"} {
 		if str(f, k) == "" {
 			return missing(k)
+		}
+	}
+	for _, k := range []string{"first_name_th", "last_name_th"} {
+		if !thaiNameRE.MatchString(str(f, k)) {
+			return formLabels[k] + " ต้องเป็นอักษรภาษาไทยเท่านั้น", k
+		}
+	}
+	for _, k := range []string{"first_name_en", "last_name_en"} {
+		if !engNameRE.MatchString(str(f, k)) {
+			return formLabels[k] + " ต้องเป็นอักษรภาษาอังกฤษเท่านั้น", k
 		}
 	}
 	year := time.Now().Year()
@@ -123,7 +141,8 @@ func validateForm(f map[string]any) (msg, field string) {
 	if _, ok := f["has_work_experience"].(bool); !ok {
 		return missing("has_work_experience")
 	}
-	if n, ok := f["years_of_experience"].(float64); !ok || n < 0 {
+	// free text since the field became a text box; numbers from older drafts still count
+	if _, isNum := f["years_of_experience"].(float64); !isNum && str(f, "years_of_experience") == "" {
 		return missing("years_of_experience")
 	}
 	edu, _ := f["education"].([]any)
@@ -141,6 +160,10 @@ func validateForm(f map[string]any) (msg, field string) {
 			}
 			if !ok {
 				return fmt.Sprintf("%s แถวที่ %d: กรุณากรอก %s", formLabels["education"], i+1, educationLabels[k]),
+					fmt.Sprintf("education.%d.%s", i, k)
+			}
+			if k == "institute" && !lettersRE.MatchString(str(m, k)) {
+				return fmt.Sprintf("%s แถวที่ %d: %s ต้องเป็นตัวอักษรเท่านั้น", formLabels["education"], i+1, educationLabels[k]),
 					fmt.Sprintf("education.%d.%s", i, k)
 			}
 		}

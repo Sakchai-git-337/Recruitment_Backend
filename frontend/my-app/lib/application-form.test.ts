@@ -9,9 +9,10 @@ function validForm(): ApplicationForm {
   const f = emptyForm()
   Object.assign(f, {
     expected_salary: 30000, available_start_date: "2026-11-01",
-    title_th: "นาย", first_name_th: "สมชาย", last_name_th: "ใจดี", date_of_birth: "1995-05-20",
+    title_th: "นาย", first_name_th: "สมชาย", last_name_th: "ใจดี",
+    title_en: "Mr.", first_name_en: "Somchai", last_name_en: "Jaidee", date_of_birth: "1995-05-20",
     present_address: "1 ถ.สุขุมวิท", present_province: "กรุงเทพ", mobile_phone: "0812345678", email: "a@b.co",
-    relevant_skills: "Go", has_work_experience: false, years_of_experience: 0,
+    relevant_skills: "Go", has_work_experience: false, years_of_experience: "0",
     pdpa_consent: true, signature_name: "สมชาย ใจดี",
   })
   f.education = [{ level: "bachelor", institute: "มธ.", province: "", year_from: null, year_to: 2560, degree: "วท.บ.", major: "CS", gpa: 3.2 }]
@@ -37,7 +38,7 @@ test("valid form has no errors; empty form flags required per step", () => {
   assert.equal(firstInvalidStep(validForm()), null)
   const e = emptyForm()
   assert.deepEqual(Object.keys(validateStep(1, e)).sort(), ["available_start_date", "expected_salary"])
-  assert.deepEqual(Object.keys(validateStep(2, e)).sort(), ["date_of_birth", "first_name_th", "last_name_th", "title_th"])
+  assert.deepEqual(Object.keys(validateStep(2, e)).sort(), ["date_of_birth", "first_name_en", "first_name_th", "last_name_en", "last_name_th", "title_en", "title_th"])
   assert.deepEqual(Object.keys(validateStep(3, e)).sort(), ["email", "mobile_phone", "present_address", "present_province"])
   assert.deepEqual(Object.keys(validateStep(4, e)), [])
   assert.ok(validateStep(5, e)["education.0.institute"])
@@ -122,10 +123,23 @@ test("showIf: hidden fields are not validated, shown ones are", () => {
   assert.equal(fieldByKey("spouse_name")?.showIf?.({ marital_status: "single" }), false)
 })
 
-test("years of experience must be >= 0", () => {
+test("years of experience is free text but required", () => {
   const f = validForm()
-  f.years_of_experience = -1
+  f.years_of_experience = "2 ปี 6 เดือน"
+  assert.equal(validateStep(7, f).years_of_experience, undefined)
+  f.years_of_experience = ""
   assert.ok(validateStep(7, f).years_of_experience)
+})
+
+test("names: thai field thai-only, english field A-Z only; institute letters only", () => {
+  const f = validForm()
+  f.first_name_th = "jasmin"
+  f.last_name_en = "ใจดี"
+  ;(f.education as { institute: string }[])[0].institute = "123123123"
+  const e = validateAll(f)
+  assert.ok(e.first_name_th)
+  assert.ok(e.last_name_en)
+  assert.ok(e["education.0.institute"])
 })
 
 test("signature must equal first + last name, whitespace-insensitive", () => {

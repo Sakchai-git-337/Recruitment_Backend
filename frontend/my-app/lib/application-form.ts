@@ -21,7 +21,7 @@ export type Field = {
   /** number must be > 0 */
   positive?: boolean
   /** extra rule */
-  format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode"
+  format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode" | "thai" | "english" | "letters"
   /** text: "thai-address" = ตำบล combobox that also fills sibling `<prefix>district|province|postcode`; "thai-province" = province suggestions */
   widget?: "thai-address" | "thai-province"
   /** unit shown next to a number input (บาท, ซม., ...) */
@@ -80,12 +80,12 @@ export const SECTIONS: Section[] = [
     title: "ข้อมูลส่วนตัว",
     fields: [
       choice("title_th", "คำนำหน้า (ไทย)", opts([["นาย", "นาย"], ["นาง", "นาง"], ["นางสาว", "นางสาว"]]), { required: true }),
-      text("first_name_th", "ชื่อ (ไทย)", { required: true }),
-      text("last_name_th", "นามสกุล (ไทย)", { required: true }),
+      text("first_name_th", "ชื่อ (ไทย)", { required: true, format: "thai" }),
+      text("last_name_th", "นามสกุล (ไทย)", { required: true, format: "thai" }),
       text("nickname", "ชื่อเล่น"),
-      choice("title_en", "คำนำหน้า (อังกฤษ)", opts([["Mr.", "Mr."], ["Mrs.", "Mrs."], ["Miss", "Miss"]])),
-      text("first_name_en", "ชื่อ (อังกฤษ)"),
-      text("last_name_en", "นามสกุล (อังกฤษ)"),
+      choice("title_en", "คำนำหน้า (อังกฤษ)", opts([["Mr.", "Mr."], ["Mrs.", "Mrs."], ["Miss", "Miss"]]), { required: true }),
+      text("first_name_en", "ชื่อ (อังกฤษ)", { required: true, format: "english" }),
+      text("last_name_en", "นามสกุล (อังกฤษ)", { required: true, format: "english" }),
       choice("gender", "เพศ", opts([["male", "ชาย"], ["female", "หญิง"]])),
       date("date_of_birth", "วันเกิด", { required: true }),
       text("birth_province", "จังหวัดที่เกิด"),
@@ -152,7 +152,7 @@ export const SECTIONS: Section[] = [
         defaultRows: () => [{ level: "", institute: "", province: "", year_from: null, year_to: null, degree: "", major: "", gpa: null }],
         fields: [
           choice("level", "ระดับการศึกษา", opts([["primary", "ประถมศึกษา"], ["lower_secondary", "มัธยมศึกษาตอนต้น"], ["upper_secondary", "มัธยมศึกษาตอนปลาย"], ["vocational_cert", "ปวช."], ["diploma", "ปวส./อนุปริญญา"], ["bachelor", "ปริญญาตรี"], ["master_or_higher", "ปริญญาโทขึ้นไป"]]), { required: true }),
-          text("institute", "สถาบัน", { required: true }),
+          text("institute", "สถาบัน", { required: true, format: "letters" }),
           text("province", "จังหวัด"),
           num("year_from", "ปีที่เริ่ม", { min: 1, max: 3000 }),
           num("year_to", "ปีที่จบ", { required: true, min: 1, max: 3000 }),
@@ -204,7 +204,7 @@ export const SECTIONS: Section[] = [
     title: "ประสบการณ์ทำงาน",
     fields: [
       bool("has_work_experience", "มีประสบการณ์ทำงานหรือไม่", { required: true, yesNo: ["มี", "ไม่มี"] }),
-      num("years_of_experience", "จำนวนปีที่มีประสบการณ์", { required: true, min: 0, max: 80, unit: "ปี" }),
+      text("years_of_experience", "จำนวนปีที่มีประสบการณ์", { required: true }),
       {
         key: "current_job", label: "งานปัจจุบัน/งานล่าสุด", type: "group", showIf: when("has_work_experience", true),
         fields: [
@@ -344,6 +344,9 @@ function validateValue(f: Field, v: unknown, path: string, form: ApplicationForm
   if (f.format === "national_id" && !isValidNationalId(s)) err("เลขบัตรประชาชนไม่ถูกต้อง")
   if (f.format === "phone" && !/^\d{9,10}$/.test(s.replace(/[\s-]/g, ""))) err("เบอร์โทรศัพท์ต้องมี 9-10 หลัก")
   if (f.format === "postcode" && !/^\d{5}$/.test(s)) err("รหัสไปรษณีย์ต้องมี 5 หลัก")
+  if (f.format === "thai" && !/^[ก-๏\s.-]+$/.test(s)) err(`${f.label}ต้องเป็นอักษรภาษาไทยเท่านั้น`)
+  if (f.format === "english" && !/^[A-Za-z\s.'-]+$/.test(s)) err(`${f.label}ต้องเป็นอักษรภาษาอังกฤษเท่านั้น`)
+  if (f.format === "letters" && !/^[ก-๏A-Za-z\s.()-]+$/.test(s)) err(`${f.label}ต้องเป็นตัวอักษรเท่านั้น`)
   if (f.format === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) err("อีเมลไม่ถูกต้อง")
   if (f.format === "signature" && squash(s) !== squash(`${form.first_name_th ?? ""} ${form.last_name_th ?? ""}`)) {
     err("ลายเซ็นต้องตรงกับชื่อ-นามสกุลที่กรอก")
