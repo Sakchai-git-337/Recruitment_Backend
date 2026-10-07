@@ -155,6 +155,28 @@ func TestJobsAndApplications(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 
+	// rejecting remembers the stage it happened at; re-rejecting keeps it; moving on clears it
+	from := func() (rf string) {
+		database.DB.QueryRow(context.Background(), `SELECT rejected_from FROM applications WHERE application_id=$1`, app.ApplicationID).Scan(&rf)
+		return
+	}
+	appPath := fmt.Sprintf("/applications/%d", app.ApplicationID)
+	doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "rejected"})
+	doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "rejected"})
+	if rf := from(); rf != "interview" {
+		t.Fatalf("rejected_from=%q", rf)
+	}
+	doJSON(t, r, "PATCH", appPath, hr, map[string]any{"note": "x"})
+	if rf := from(); rf != "interview" {
+		t.Fatalf("note-only patch changed rejected_from=%q", rf)
+	}
+	if w = doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "screening"}); w.Code != 200 {
+		t.Fatalf("screening: %d %s", w.Code, w.Body.String())
+	}
+	if rf := from(); rf != "" {
+		t.Fatalf("rejected_from not cleared: %q", rf)
+	}
+
 	// DELETE
 	path := fmt.Sprintf("/applications/%d", app.ApplicationID)
 	if w = doJSON(t, r, "DELETE", path, ta, nil); w.Code != 403 {

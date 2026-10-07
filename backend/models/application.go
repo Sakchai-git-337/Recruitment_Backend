@@ -9,6 +9,7 @@ type Application struct {
 	ApplyDate     time.Time `json:"apply_date"`
 	Status        string    `json:"status"`
 	Note          string    `json:"note"`
+	RejectedFrom  string    `json:"rejected_from"` // status before it became "rejected"
 
 	// read-only, filled by JOIN
 	ApplicantName  string  `json:"applicant_name"`

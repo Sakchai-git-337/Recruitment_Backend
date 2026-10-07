@@ -17,7 +17,7 @@ import (
 )
 
 const applicationSelect = `
-	SELECT a.application_id, a.user_id, a.job_id, a.apply_date, a.status, a.note,
+	SELECT a.application_id, a.user_id, a.job_id, a.apply_date, a.status, a.note, a.rejected_from,
 	       u.full_name, u.email, COALESCE(u.phone, ''), j.title,
 	       j.status, to_char(j.closing_date, 'YYYY-MM-DD')
 	FROM applications a
@@ -33,6 +33,7 @@ func scanApplication(row pgx.Row, app *models.Application) error {
 		&app.ApplyDate,
 		&app.Status,
 		&app.Note,
+		&app.RejectedFrom,
 		&app.ApplicantName,
 		&app.ApplicantEmail,
 		&app.ApplicantPhone,
@@ -271,8 +272,13 @@ func UpdateApplication(c *gin.Context) {
 		context.Background(),
 		`
 		UPDATE applications
-		SET status = COALESCE($1, status),
-			note = COALESCE($2, note)
+		SET status = COALESCE($1::text, status),
+			note = COALESCE($2, note),
+			rejected_from = CASE
+				WHEN $1::text = 'rejected' AND status <> 'rejected' THEN status
+				WHEN $1::text <> 'rejected' THEN ''
+				ELSE rejected_from
+			END
 		WHERE application_id = $3
 		`,
 		data.Status,

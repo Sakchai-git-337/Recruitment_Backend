@@ -112,7 +112,7 @@ export default function ApplicationDetailPage() {
         </div>
         <div className="mt-6 border-t pt-5">
           <StatusStepper
-            status={app.status} disabled={busy}
+            status={app.status} rejectedFrom={app.rejected_from} disabled={busy}
             onChange={(s: AppStatus) => s !== app.status && run(() => api(`/applications/${id}`, { method: "PATCH", body: { status: s } }), "อัปเดตสถานะแล้ว")}
           />
         </div>

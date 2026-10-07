@@ -18,7 +18,7 @@ export type ApplicationDocument = {
 }
 export type Application = {
   application_id: number; user_id: number; job_id: number
-  apply_date: string; status: AppStatus; note: string
+  apply_date: string; status: AppStatus; note: string; rejected_from?: AppStatus | ""
   applicant_name?: string; applicant_email?: string; applicant_phone?: string; job_title?: string
   job_status?: "open" | "closed"; job_closing_date?: string | null
 }

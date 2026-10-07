@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS applications (
   status     TEXT NOT NULL,
   note       TEXT NOT NULL DEFAULT ''
 );
+-- stage the application was at when it got rejected ('' unless status = 'rejected')
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS rejected_from TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS screenings (
   screening_id   SERIAL PRIMARY KEY,

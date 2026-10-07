@@ -57,31 +57,41 @@ function Step({
   )
 }
 
-/** pending -> screening -> interview -> passed; rejected is a red terminal state. Clickable when `onChange` is given. */
+/**
+ * pending -> screening -> interview -> passed; rejected is a red terminal state.
+ * `rejectedFrom` = stage it was rejected at: earlier steps stay done, a red line runs from that stage to "ไม่ผ่าน".
+ * Clickable when `onChange` is given.
+ */
 export function StatusStepper({
-  status, onChange, disabled, className,
+  status, rejectedFrom, onChange, disabled, className,
 }: {
   status: AppStatus
+  rejectedFrom?: AppStatus | ""
   onChange?: (s: AppStatus) => void
   disabled?: boolean
   className?: string
 }) {
   const rejected = status === "rejected"
-  const cur = FLOW.indexOf(status)
+  // rows rejected before the stage was recorded fall back to the first step
+  const at = rejected ? FLOW.indexOf(rejectedFrom || "pending") : -1
+  const cur = rejected ? at : FLOW.indexOf(status)
   const click = onChange && !disabled ? onChange : undefined
   const showRejected = rejected || !!onChange
 
   return (
     <ol className={cn("flex w-full items-start", className)}>
-      {FLOW.filter((s) => !(rejected && !onChange && s === "passed")).map((s, i) => {
+      {/* rejected: never show "ผ่าน"; applicant view also drops the steps after the rejection so the red line runs straight to "ไม่ผ่าน" */}
+      {FLOW.filter((s, i) => !(rejected && (s === "passed" || (!onChange && i > at)))).map((s, i) => {
         // "passed" is a terminal state like "rejected": green check instead of the in-progress ring
-        const state: State = rejected ? "rejdone" : i < cur ? "done" : i === cur ? (s === "passed" ? "passed" : "current") : "todo"
+        const state: State = rejected
+          ? i < at ? "done" : i === at ? "rejdone" : "todo"
+          : i < cur ? "done" : i === cur ? (s === "passed" ? "passed" : "current") : "todo"
         return (
           <Step
             key={s} state={state} label={APP_STATUS_LABEL[s]} status={s} current={status} onClick={click}
             icon={state === "done" || state === "passed" ? <Check className="size-4" /> : i + 1}
             line={showRejected || i < FLOW.length - 1}
-            lineDone={!rejected && i < cur} lineRed={rejected}
+            lineDone={i < cur} lineRed={rejected && i >= at}
           />
         )
       })}
