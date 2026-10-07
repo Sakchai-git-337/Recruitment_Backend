@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { ArrowLeft, ArrowRight, Briefcase, Check, CheckCircle2, Loader2, MapPin, Send } from "lucide-react"
@@ -115,11 +115,32 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     }
   }, [form, phase, dkey])
 
-  const set = (k: string, v: unknown) => setForm((f) => ({
-    ...f, [k]: v,
-    // no work experience: years locked to 0, nothing to list
-    ...(k === "has_work_experience" && v === false ? { years_of_experience: "0", employment_records: [] } : {}),
-  }))
+  // keys edited since the last render: their errors are re-checked live (see the effect below)
+  const touched = useRef(new Set<string>())
+  const set = (k: string, v: unknown) => {
+    touched.current.add(k)
+    setForm((f) => ({
+      ...f, [k]: v,
+      // no work experience: years locked to 0, nothing to list
+      ...(k === "has_work_experience" && v === false ? { years_of_experience: "0", employment_records: [] } : {}),
+    }))
+  }
+
+  // live check of what was just edited: wrong values turn red right away, fixed ones clear.
+  // "please fill in" errors only appear on Next/Submit (or stay until fixed), so fresh rows aren't all red.
+  useEffect(() => {
+    if (!touched.current.size) return
+    const keys = [...touched.current]
+    touched.current.clear()
+    const fresh = validateStep(step, form)
+    const mine = (p: string) => keys.some((k) => p === k || p.startsWith(k + "."))
+    setErrors((e) => {
+      const n: Errors = {}
+      for (const [p, m] of Object.entries(e)) if (!mine(p)) n[p] = m
+      for (const [p, m] of Object.entries(fresh)) if (mine(p) && (!m.startsWith("กรุณา") || p in e)) n[p] = m
+      return n
+    })
+  }, [form, step])
 
   function docErrors(): Errors {
     const e: Errors = {}

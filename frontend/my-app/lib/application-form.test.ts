@@ -219,3 +219,17 @@ test("start date can't be in the past; birth/issue dates can't be in the future"
   f.id_issue_date = localToday(new Date(Date.now() + 864e5))
   assert.ok(validateStep(2, f).id_issue_date)
 })
+
+test("letters-only and phone fields reject the wrong kind of input", () => {
+  const f = validForm()
+  Object.assign(f, { religion: "พุทธ", nationality: "ไทย", nickname: "Ann", home_phone: "02-123-4567", father_name: "นายสมชาย ใจดี" })
+  assert.deepEqual(validateStep(2, f), {})
+  f.religion = "123"
+  f.nickname = "ann99"
+  assert.ok(validateStep(2, f).religion)
+  assert.ok(validateStep(2, f).nickname)
+  f.home_phone = "02-12"
+  assert.ok(validateStep(3, f).home_phone)
+  f.father_name = "007"
+  assert.ok(validateStep(4, f).father_name)
+})

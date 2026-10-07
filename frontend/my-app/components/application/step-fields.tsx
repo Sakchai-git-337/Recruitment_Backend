@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { computeAge, type ApplicationForm, type Errors, type Field, type Row } from "@/lib/application-form"
 import { FormField } from "@/components/app/form-field"
 import { Input } from "@/components/ui/input"
@@ -36,6 +37,29 @@ function Pills({ options, value, onChange, id }: {
   )
 }
 
+/** characters a format may contain; anything else is dropped while typing */
+const ALLOWED: Partial<Record<NonNullable<Field["format"]>, RegExp>> = {
+  national_id: /\D/g, postcode: /\D/g, phone: /[^\d\s-]/g,
+}
+/** keep digits and a single dot */
+const decimalText = (t: string) => t.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1")
+
+/** number field typed as text: letters never get in, "3." can still be typed on the way to "3.5" */
+function NumberInput({ value, onChange, ...rest }: { value: unknown; onChange: (v: number | null) => void } & Omit<React.ComponentProps<typeof Input>, "value" | "onChange">) {
+  const [text, setText] = useState(value == null ? "" : String(value))
+  const asNum = text === "" ? null : Number(text)
+  // follow outside changes (draft restore, prefill) unless they match what is being typed
+  const shown = asNum === value || (asNum === null && value == null) ? text : value == null ? "" : String(value)
+  return (
+    <Input {...rest} type="text" inputMode="decimal" value={shown}
+      onChange={(e) => {
+        const t = decimalText(e.target.value)
+        setText(t)
+        onChange(t === "" || t === "." ? null : Number(t))
+      }} />
+  )
+}
+
 function Control({ f, value, onChange, id, invalid, disabled, onPatch }: {
   f: Field; value: unknown; onChange: (v: unknown) => void; id: string; invalid: boolean; disabled?: boolean
   /** set sibling keys (address autocomplete) */
@@ -48,11 +72,7 @@ function Control({ f, value, onChange, id, invalid, disabled, onPatch }: {
     case "number":
       return (
         <div className="relative">
-          <Input
-            id={id} type="number" inputMode="decimal" min={f.min} max={f.max} step="any"
-            className={f.unit ? "pr-14" : undefined} value={value == null ? "" : String(value)}
-            onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} {...aria}
-          />
+          <NumberInput id={id} className={f.unit ? "pr-14" : undefined} value={value} onChange={onChange} {...aria} />
           {f.unit && <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">{f.unit}</span>}
         </div>
       )
@@ -96,7 +116,11 @@ function Control({ f, value, onChange, id, invalid, disabled, onPatch }: {
         <Input
           id={id} type={f.format === "email" ? "email" : "text"} inputMode={inputMode}
           maxLength={f.format === "national_id" ? 13 : f.format === "postcode" ? 5 : undefined} autoComplete="off" disabled={disabled}
-          value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} {...aria}
+          value={String(value ?? "")} {...aria}
+          onChange={(e) => {
+            const t = e.target.value
+            onChange(f.format === "decimal" ? decimalText(t) : f.format && ALLOWED[f.format] ? t.replace(ALLOWED[f.format]!, "") : t)
+          }}
         />
       )
     }
