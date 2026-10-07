@@ -24,7 +24,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-muted-foreground">© {new Date().getFullYear()} Recruit</p>
+        <p className="relative text-xs text-muted-foreground">© {new Date().getFullYear()} MAIRU</p>
       </aside>
       <main className="flex flex-col justify-center px-4 py-10 sm:px-8">
         <div className="mx-auto w-full max-w-md">

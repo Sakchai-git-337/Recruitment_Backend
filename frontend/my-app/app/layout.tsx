@@ -12,7 +12,7 @@ const font = IBM_Plex_Sans_Thai({
 })
 
 export const metadata: Metadata = {
-  title: "Recruit — ร่วมงานกับเรา",
+  title: "MAIRU — ร่วมงานกับเรา",
   description: "ระบบรับสมัครงาน",
 }
 

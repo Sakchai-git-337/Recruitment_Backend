@@ -88,7 +88,7 @@ export function PublicShell({ children, className, rootClassName }: { children: 
       <footer className="border-t bg-card print:hidden">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:px-6">
           <Logo className="[&_span:last-child]:text-base" />
-          <p>© {new Date().getFullYear()} Recruit · ระบบรับสมัครงานออนไลน์</p>
+          <p>© {new Date().getFullYear()} MAIRU · ระบบรับสมัครงานออนไลน์</p>
         </div>
       </footer>
     </div>
