@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { formatDate, timeAgo } from "@/lib/format"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Job } from "@/lib/types"
@@ -15,7 +16,10 @@ export function JobCard({ job }: { job: Job }) {
           </h3>
           {m.department && <p className="mt-0.5 text-sm text-muted-foreground">{m.department.text}</p>}
         </div>
-        <TypeBadge type={job.employment_type} />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <TypeBadge type={job.employment_type} />
+          <span className="text-xs text-muted-foreground" title={formatDate(job.created_at)}>{timeAgo(job.created_at)}</span>
+        </div>
       </div>
       <div className="mt-4 flex flex-col gap-2">
         {m.location && <MetaItem icon={m.location.icon}>{m.location.text}</MetaItem>}

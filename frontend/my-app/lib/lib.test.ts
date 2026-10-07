@@ -3,7 +3,7 @@ import assert from "node:assert/strict"
 import { countByStatus, groupByStatus, type Application } from "./types.ts"
 import { api, apiUpload, logout, setSession } from "./api.ts"
 import { safeNext } from "./safe-next.ts"
-import { initials } from "./format.ts"
+import { initials, timeAgo } from "./format.ts"
 
 const app = (id: number, status: Application["status"]): Application => ({
   application_id: id, user_id: 1, job_id: 1, apply_date: "", status, note: "",
@@ -137,4 +137,14 @@ test("initials skips Thai leading vowels", () => {
   assert.equal(initials("แสงดาว ใจดี"), "สจ")
   assert.equal(initials("Ann Lee"), "AL")
   assert.equal(initials("  "), "?")
+})
+
+test("timeAgo: hours, days, then the date", () => {
+  const now = new Date("2026-10-07T12:00:00Z")
+  const ago = (ms: number) => new Date(now.getTime() - ms).toISOString()
+  assert.equal(timeAgo(ago(10 * 60e3), now), "< 1 ชม.ที่แล้ว")
+  assert.equal(timeAgo(ago(5 * 3600e3), now), "5 ชม.ที่แล้ว")
+  assert.equal(timeAgo(ago(3 * 864e5), now), "3 วันที่แล้ว")
+  assert.match(timeAgo(ago(45 * 864e5), now), /2569/)
+  assert.equal(timeAgo("", now), "-")
 })

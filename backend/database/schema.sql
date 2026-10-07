@@ -29,6 +29,8 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_probation BOOLEAN NOT NULL DEFAULT
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_age INT NULL CHECK (min_age BETWEEN 15 AND 70);
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_experience_years INT NULL CHECK (min_experience_years BETWEEN 0 AND 50);
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_education TEXT NOT NULL DEFAULT '';
+-- when the job was posted (jobs that existed before this column get the migration time)
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE TABLE IF NOT EXISTS applications (
   application_id SERIAL PRIMARY KEY,

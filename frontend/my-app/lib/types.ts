@@ -14,6 +14,7 @@ export type Job = {
   has_probation: boolean
   /** applicant requirements (null / "" = none); min_education is an education level key */
   min_age: number | null; min_experience_years: number | null; min_education: string
+  created_at: string // when the job was posted (ISO)
 }
 export type ApplicationDocument = {
   document_id: number; doc_type: string; filename: string

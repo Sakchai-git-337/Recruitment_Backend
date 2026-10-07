@@ -15,12 +15,12 @@ import (
 
 const jobCols = `job_id, title, description, requirement, location, status, created_by,
 	department, employment_type, salary_min, salary_max, headcount, to_char(closing_date, 'YYYY-MM-DD'), has_probation,
-	min_age, min_experience_years, min_education`
+	min_age, min_experience_years, min_education, created_at`
 
 func scanJob(row pgx.Row, j *models.Job) error {
 	return row.Scan(&j.JobID, &j.Title, &j.Description, &j.Requirement, &j.Location, &j.Status, &j.CreatedBy,
 		&j.Department, &j.EmploymentType, &j.SalaryMin, &j.SalaryMax, &j.Headcount, &j.ClosingDate, &j.HasProbation,
-		&j.MinAge, &j.MinExperienceYears, &j.MinEducation)
+		&j.MinAge, &j.MinExperienceYears, &j.MinEducation, &j.CreatedAt)
 }
 
 // checkRequirements validates a job's applicant requirements; returns false after responding 400.
@@ -78,7 +78,7 @@ func GetJobs(c *gin.Context) {
 	var err error
 
 	if search == "" {
-		query += ` ORDER BY job_id`
+		query += ` ORDER BY created_at DESC, job_id DESC`
 
 		rows, err = database.DB.Query(
 			context.Background(),
@@ -91,7 +91,7 @@ func GetJobs(c *gin.Context) {
 			   OR requirement ILIKE $1
 			   OR location ILIKE $1
 			   OR department ILIKE $1
-			ORDER BY job_id
+			ORDER BY created_at DESC, job_id DESC
 		`
 
 		rows, err = database.DB.Query(

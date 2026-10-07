@@ -199,3 +199,25 @@ func TestJobsAndApplications(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestJobsNewestFirst(t *testing.T) {
+	r := newTestRouter(t)
+	seedUser(t, "HR", "hr@t.com", "pw", "recruitment")
+	hr := loginToken(t, r, "hr@t.com", "pw")
+	for _, title := range []string{"Old", "New"} {
+		if w := doJSON(t, r, "POST", "/jobs", hr, map[string]any{
+			"title": title, "description": "d", "requirement": "r", "location": "BKK", "status": "open"}); w.Code != 201 {
+			t.Fatal(w.Code, w.Body.String())
+		}
+	}
+	// same-second inserts: make "Old" clearly older
+	database.DB.Exec(context.Background(), `UPDATE jobs SET created_at = now() - interval '2 hours' WHERE title = 'Old'`)
+	var jobs []struct {
+		Title     string `json:"title"`
+		CreatedAt string `json:"created_at"`
+	}
+	dec(t, doJSON(t, r, "GET", "/jobs", "", nil).Body.Bytes(), &jobs)
+	if len(jobs) != 2 || jobs[0].Title != "New" || jobs[1].Title != "Old" || jobs[0].CreatedAt == "" {
+		t.Fatalf("%+v", jobs)
+	}
+}

@@ -6,6 +6,17 @@ export function formatDate(iso: string | null | undefined): string {
   return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })
 }
 
+/** how long ago a job was posted: "< 1 ชม.ที่แล้ว", "5 ชม.ที่แล้ว", "3 วันที่แล้ว", older than 30 days → date */
+export function timeAgo(iso: string | null | undefined, now = new Date()): string {
+  const t = iso ? new Date(iso).getTime() : NaN
+  if (isNaN(t)) return "-"
+  const hours = Math.floor((now.getTime() - t) / 3_600_000)
+  if (hours < 1) return "< 1 ชม.ที่แล้ว"
+  if (hours < 24) return `${hours} ชม.ที่แล้ว`
+  const days = Math.floor(hours / 24)
+  return days <= 30 ? `${days} วันที่แล้ว` : formatDate(iso)
+}
+
 export function formatMoney(n: number): string {
   return "฿" + n.toLocaleString("en-US")
 }

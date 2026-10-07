@@ -1,6 +1,9 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Job struct {
 	JobID          int     `json:"job_id"`
@@ -18,9 +21,10 @@ type Job struct {
 	ClosingDate    *string `json:"closing_date"` // "YYYY-MM-DD" or null
 	HasProbation   bool    `json:"has_probation"`
 	// applicant requirements (nil / "" = none); MinEducation is an education level key, e.g. "bachelor"
-	MinAge             *int   `json:"min_age"`
-	MinExperienceYears *int   `json:"min_experience_years"`
-	MinEducation       string `json:"min_education"`
+	MinAge             *int      `json:"min_age"`
+	MinExperienceYears *int      `json:"min_experience_years"`
+	MinEducation       string    `json:"min_education"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 // Optional distinguishes an absent JSON key (Set=false) from an explicit null (Set=true, Value=nil).
