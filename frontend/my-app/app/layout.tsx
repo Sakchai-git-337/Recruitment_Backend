@@ -22,7 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-sans">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
-          <Toaster richColors position="top-right" />
+          <Toaster richColors closeButton position="top-right" offset={{ top: 76 }} mobileOffset={{ top: 64 }} />
         </ThemeProvider>
       </body>
     </html>
