@@ -2,6 +2,8 @@
 // The wizard renders from SECTIONS, FormViewer renders a submitted form from SECTIONS,
 // the backend keeps its own Go list of the required (`required: true`) keys.
 
+import { localToday } from "./job-closed.ts"
+
 export type FieldType = "text" | "textarea" | "date" | "month" | "number" | "enum" | "bool" | "list" | "group"
 export type Option = { value: string | number; label: string }
 export type Row = Record<string, unknown>
@@ -22,6 +24,8 @@ export type Field = {
   positive?: boolean
   /** extra rule */
   format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode" | "thai" | "english" | "letters" | "decimal"
+  /** date: "future" = today or later, "past" = today or earlier */
+  when?: "future" | "past"
   /** shown but read-only (value is set by the wizard) */
   disabledIf?: (form: ApplicationForm) => boolean
   /** text: "thai-address" = ตำบล combobox that also fills sibling `<prefix>district|province|postcode`; "thai-province" = province suggestions */
@@ -69,7 +73,7 @@ export const SECTIONS: Section[] = [
     title: "ตำแหน่งที่สมัคร",
     fields: [
       num("expected_salary", "เงินเดือนที่คาดหวัง", { required: true, positive: true, unit: "บาท" }),
-      date("available_start_date", "วันที่เริ่มงานได้", { required: true }),
+      date("available_start_date", "วันที่เริ่มงานได้", { required: true, when: "future" }),
       choice("work_upcountry", "ทำงานต่างจังหวัดได้หรือไม่", opts([["no", "ไม่ได้"], ["sometimes", "บางครั้ง"], ["anywhere", "ได้ทั่วประเทศ"], ["region", "เฉพาะภาค"]])),
       text("work_upcountry_region", "ระบุภาค", { showIf: when("work_upcountry", "region") }),
       choice("current_status", "สถานะปัจจุบัน", opts([["unemployed", "ว่างงาน"], ["full_time", "มีงานประจำ"], ["part_time", "งานเสริม"]])),
@@ -91,7 +95,7 @@ export const SECTIONS: Section[] = [
       text("first_name_en", "ชื่อ (อังกฤษ)", { required: true, format: "english" }),
       text("last_name_en", "นามสกุล (อังกฤษ)", { required: true, format: "english" }),
       choice("gender", "เพศ", opts([["male", "ชาย"], ["female", "หญิง"]])),
-      date("date_of_birth", "วันเกิด", { required: true }),
+      date("date_of_birth", "วันเกิด", { required: true, when: "past" }),
       text("birth_province", "จังหวัดที่เกิด"),
       choice("blood_type", "กรุ๊ปเลือด", opts([["A", "A"], ["B", "B"], ["AB", "AB"], ["O", "O"]])),
       text("religion", "ศาสนา"),
@@ -100,7 +104,7 @@ export const SECTIONS: Section[] = [
       text("national_id", "เลขบัตรประชาชน", { format: "national_id" }),
       text("id_issued_at", "สถานที่ออกบัตร"),
       text("id_issue_province", "จังหวัดที่ออกบัตร"),
-      date("id_issue_date", "วันที่ออกบัตร"),
+      date("id_issue_date", "วันที่ออกบัตร", { when: "past" }),
       date("id_expiry_date", "วันที่บัตรหมดอายุ"),
       choice("military_status", "สถานะทางทหาร", opts([["completed", "ผ่านการเกณฑ์แล้ว"], ["exempted", "ได้รับการยกเว้น"], ["not_applicable", "ไม่เกี่ยวข้อง"]])),
       num("height_cm", "ส่วนสูง", { min: 0, max: 300, unit: "ซม." }),
@@ -214,7 +218,7 @@ export const SECTIONS: Section[] = [
         fields: [
           text("employer", "ชื่อนายจ้าง/บริษัท"), text("business_type", "ประเภทธุรกิจ"),
           area("address", "ที่อยู่"), text("phone", "เบอร์โทรศัพท์"),
-          date("start_date", "วันที่เริ่มงาน"),
+          date("start_date", "วันที่เริ่มงาน", { when: "past" }),
           text("first_position", "ตำแหน่งแรกเข้า"), text("current_position", "ตำแหน่งปัจจุบัน"),
           area("job_description", "ลักษณะงานที่ทำ"), text("reason_for_leaving", "เหตุผลที่ลาออก"),
           num("salary_start", "เงินเดือนแรกเข้า", { min: 0, unit: "บาท" }),
@@ -336,6 +340,8 @@ function validateValue(f: Field, v: unknown, path: string, form: ApplicationForm
     case "date":
       if (typeof v !== "string" || !isDate(v)) return err(`${f.label}ไม่ถูกต้อง`)
       if (f.key === "date_of_birth" && (Number(v.slice(0, 4)) < 1900 || Number(v.slice(0, 4)) > new Date().getFullYear())) return err("ปีเกิดต้องเป็น ค.ศ.")
+      if (f.when === "future" && v < localToday()) return err(`${f.label}ต้องไม่ใช่วันที่ผ่านมาแล้ว`)
+      if (f.when === "past" && v > localToday()) return err(`${f.label}ต้องไม่เกินวันนี้`)
       return
     case "month":
       if (typeof v !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(v)) return err(`${f.label}ไม่ถูกต้อง`)

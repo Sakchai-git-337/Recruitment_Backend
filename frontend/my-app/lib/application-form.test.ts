@@ -4,11 +4,12 @@ import {
   SECTIONS, emptyForm, validateStep, validateAll, firstInvalidStep, isValidNationalId, computeAge, optionLabel, fieldByKey,
   type ApplicationForm,
 } from "./application-form.ts"
+import { localToday } from "./job-closed.ts"
 
 function validForm(): ApplicationForm {
   const f = emptyForm()
   Object.assign(f, {
-    expected_salary: 30000, available_start_date: "2026-11-01",
+    expected_salary: 30000, available_start_date: localToday(new Date(Date.now() + 30 * 864e5)),
     title_th: "นาย", first_name_th: "สมชาย", last_name_th: "ใจดี",
     title_en: "Mr.", first_name_en: "Somchai", last_name_en: "Jaidee", date_of_birth: "1995-05-20",
     present_address: "1 ถ.สุขุมวิท", present_province: "กรุงเทพ", mobile_phone: "0812345678", email: "a@b.co",
@@ -207,4 +208,14 @@ test("living at the parents' house hides the parents' address fields", () => {
     assert.equal(fieldByKey(k)?.showIf?.({ residence_type: "parents" }), false, k)
     assert.equal(fieldByKey(k)?.showIf?.({ residence_type: "rental" }), true, k)
   }
+})
+
+test("start date can't be in the past; birth/issue dates can't be in the future", () => {
+  const f = validForm()
+  f.available_start_date = localToday(new Date(Date.now() - 864e5))
+  assert.ok(validateStep(1, f).available_start_date)
+  f.available_start_date = localToday()
+  assert.equal(validateStep(1, f).available_start_date, undefined)
+  f.id_issue_date = localToday(new Date(Date.now() + 864e5))
+  assert.ok(validateStep(2, f).id_issue_date)
 })

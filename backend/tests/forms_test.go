@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"backend/database"
 )
@@ -27,7 +28,7 @@ type tfile struct {
 
 func validForm() map[string]any {
 	return map[string]any{
-		"expected_salary": 30000, "available_start_date": "2026-11-01",
+		"expected_salary": 30000, "available_start_date": time.Now().AddDate(0, 1, 0).Format("2006-01-02"),
 		"title_th": "นาย", "first_name_th": "สมชาย", "last_name_th": "ใจดี",
 		"title_en": "Mr.", "first_name_en": "Somchai", "last_name_en": "Jaidee",
 		"date_of_birth":   "1995-05-20",
@@ -277,6 +278,10 @@ func TestFormRejections(t *testing.T) {
 	f = validForm()
 	f["available_start_date"] = "2569-11-01"
 	bad("buddhist start", f, goodFiles(), "ไม่ถูกต้อง", "available_start_date")
+
+	f = validForm()
+	f["available_start_date"] = time.Now().AddDate(0, 0, -2).Format("2006-01-02")
+	bad("start in the past", f, goodFiles(), "ต้องไม่ใช่วันที่ผ่านมาแล้ว", "available_start_date")
 
 	f = validForm()
 	f["mobile_phone"] = "12345"

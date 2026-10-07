@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { localToday } from "@/lib/job-closed"
 import { AddressAutocomplete, ProvinceInput } from "./address-autocomplete"
 import { RepeatableList } from "./repeatable-list"
 
@@ -57,7 +58,10 @@ function Control({ f, value, onChange, id, invalid, disabled, onPatch }: {
       )
     case "date":
     case "month":
-      return <Input id={id} type={f.type} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} {...aria} />
+      return (
+        <Input id={id} type={f.type} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}
+          min={f.when === "future" ? localToday() : undefined} max={f.when === "past" ? localToday() : undefined} {...aria} />
+      )
     case "bool":
       return (
         <Pills id={id} value={value} onChange={onChange}

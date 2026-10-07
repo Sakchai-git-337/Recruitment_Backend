@@ -76,6 +76,11 @@ func yearsOfExperience(f map[string]any) (float64, bool) {
 	return n, err == nil && n >= 0
 }
 
+// bangkokToday is today's date in Thailand as YYYY-MM-DD (applicants pick dates in local time).
+func bangkokToday() string {
+	return time.Now().In(time.FixedZone("ICT", 7*3600)).Format("2006-01-02")
+}
+
 func isDate(s string) bool {
 	_, err := time.Parse("2006-01-02", s)
 	return err == nil
@@ -144,6 +149,9 @@ func validateForm(f map[string]any) (msg, field string) {
 	}
 	if start.Year() < 1900 || start.Year() > year+5 {
 		return formLabels["available_start_date"] + " ไม่ถูกต้อง (ต้องเป็น ค.ศ.)", "available_start_date"
+	}
+	if start.Format("2006-01-02") < bangkokToday() {
+		return formLabels["available_start_date"] + " ต้องไม่ใช่วันที่ผ่านมาแล้ว", "available_start_date"
 	}
 	if n, ok := f["expected_salary"].(float64); !ok || n <= 0 {
 		return missing("expected_salary")
