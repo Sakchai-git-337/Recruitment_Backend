@@ -123,12 +123,21 @@ test("showIf: hidden fields are not validated, shown ones are", () => {
   assert.equal(fieldByKey("spouse_name")?.showIf?.({ marital_status: "single" }), false)
 })
 
-test("years of experience is free text but required", () => {
+test("years of experience: required number, typed as text", () => {
   const f = validForm()
-  f.years_of_experience = "2 ปี 6 เดือน"
+  f.years_of_experience = "2.5"
   assert.equal(validateStep(7, f).years_of_experience, undefined)
+  f.years_of_experience = "2 ปี"
+  assert.ok(validateStep(7, f).years_of_experience)
   f.years_of_experience = ""
   assert.ok(validateStep(7, f).years_of_experience)
+})
+
+test("no work experience: years locked, employment records hidden", () => {
+  assert.equal(fieldByKey("years_of_experience")?.disabledIf?.({ has_work_experience: false }), true)
+  assert.equal(fieldByKey("years_of_experience")?.disabledIf?.({ has_work_experience: true }), false)
+  assert.equal(fieldByKey("employment_records")?.showIf?.({ has_work_experience: false }), false)
+  assert.equal(fieldByKey("employment_records")?.showIf?.({ has_work_experience: true }), true)
 })
 
 test("names: thai field thai-only, english field A-Z only; institute letters only", () => {

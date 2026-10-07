@@ -67,6 +67,15 @@ func str(m map[string]any, k string) string {
 	return strings.TrimSpace(s)
 }
 
+// yearsOfExperience reads the field as a number: a numeric string from the text box, or a number from older drafts.
+func yearsOfExperience(f map[string]any) (float64, bool) {
+	if n, ok := f["years_of_experience"].(float64); ok {
+		return n, n >= 0
+	}
+	n, err := strconv.ParseFloat(str(f, "years_of_experience"), 64)
+	return n, err == nil && n >= 0
+}
+
 func isDate(s string) bool {
 	_, err := time.Parse("2006-01-02", s)
 	return err == nil
@@ -145,9 +154,11 @@ func validateForm(f map[string]any) (msg, field string) {
 	if _, ok := f["has_work_experience"].(bool); !ok {
 		return missing("has_work_experience")
 	}
-	// free text since the field became a text box; numbers from older drafts still count
-	if _, isNum := f["years_of_experience"].(float64); !isNum && str(f, "years_of_experience") == "" {
+	if str(f, "years_of_experience") == "" && f["years_of_experience"] == nil {
 		return missing("years_of_experience")
+	}
+	if _, ok := yearsOfExperience(f); !ok {
+		return formLabels["years_of_experience"] + " ต้องเป็นตัวเลข", "years_of_experience"
 	}
 	edu, _ := f["education"].([]any)
 	if len(edu) == 0 {

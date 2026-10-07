@@ -115,7 +115,11 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     }
   }, [form, phase, dkey])
 
-  const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }))
+  const set = (k: string, v: unknown) => setForm((f) => ({
+    ...f, [k]: v,
+    // no work experience: years locked to 0, nothing to list
+    ...(k === "has_work_experience" && v === false ? { years_of_experience: "0", employment_records: [] } : {}),
+  }))
 
   function docErrors(): Errors {
     const e: Errors = {}

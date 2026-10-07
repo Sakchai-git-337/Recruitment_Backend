@@ -21,7 +21,9 @@ export type Field = {
   /** number must be > 0 */
   positive?: boolean
   /** extra rule */
-  format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode" | "thai" | "english" | "letters"
+  format?: "national_id" | "phone" | "email" | "signature" | "consent" | "postcode" | "thai" | "english" | "letters" | "decimal"
+  /** shown but read-only (value is set by the wizard) */
+  disabledIf?: (form: ApplicationForm) => boolean
   /** text: "thai-address" = ตำบล combobox that also fills sibling `<prefix>district|province|postcode`; "thai-province" = province suggestions */
   widget?: "thai-address" | "thai-province"
   /** unit shown next to a number input (บาท, ซม., ...) */
@@ -206,7 +208,7 @@ export const SECTIONS: Section[] = [
     title: "ประสบการณ์ทำงาน",
     fields: [
       bool("has_work_experience", "มีประสบการณ์ทำงานหรือไม่", { required: true, yesNo: ["มี", "ไม่มี"] }),
-      text("years_of_experience", "จำนวนปีที่มีประสบการณ์", { required: true }),
+      text("years_of_experience", "จำนวนปีที่มีประสบการณ์", { required: true, format: "decimal", disabledIf: when("has_work_experience", false) }),
       {
         key: "current_job", label: "งานปัจจุบัน/งานล่าสุด", type: "group", showIf: when("has_work_experience", true),
         fields: [
@@ -223,7 +225,7 @@ export const SECTIONS: Section[] = [
         ],
       },
       {
-        key: "employment_records", label: "ประวัติการทำงานที่ผ่านมา", type: "list",
+        key: "employment_records", label: "ประวัติการทำงานที่ผ่านมา", type: "list", showIf: when("has_work_experience", true),
         fields: [
           month("from", "ตั้งแต่"), month("to", "ถึง"),
           text("employer", "นายจ้าง/บริษัท"), text("position", "ตำแหน่ง"),
@@ -346,6 +348,7 @@ function validateValue(f: Field, v: unknown, path: string, form: ApplicationForm
   if (f.format === "national_id" && !isValidNationalId(s)) err("เลขบัตรประชาชนไม่ถูกต้อง")
   if (f.format === "phone" && !/^\d{9,10}$/.test(s.replace(/[\s-]/g, ""))) err("เบอร์โทรศัพท์ต้องมี 9-10 หลัก")
   if (f.format === "postcode" && !/^\d{5}$/.test(s)) err("รหัสไปรษณีย์ต้องมี 5 หลัก")
+  if (f.format === "decimal" && !/^\d+(\.\d+)?$/.test(s)) err(`${f.label}ต้องเป็นตัวเลข`)
   if (f.format === "thai" && !/^[ก-๏\s.-]+$/.test(s)) err(`${f.label}ต้องเป็นอักษรภาษาไทยเท่านั้น`)
   if (f.format === "english" && !/^[A-Za-z\s.'-]+$/.test(s)) err(`${f.label}ต้องเป็นอักษรภาษาอังกฤษเท่านั้น`)
   if (f.format === "letters" && !/^[ก-๏A-Za-z\s.()-]+$/.test(s)) err(`${f.label}ต้องเป็นตัวอักษรเท่านั้น`)

@@ -247,6 +247,10 @@ func TestFormRejections(t *testing.T) {
 	bad("institute digits", f, goodFiles(), "ตัวอักษรเท่านั้น", "education.0.institute")
 
 	f = validForm()
+	f["years_of_experience"] = "สองปี"
+	bad("years not a number", f, goodFiles(), "ต้องเป็นตัวเลข", "years_of_experience")
+
+	f = validForm()
 	f["pdpa_consent"] = false
 	bad("consent", f, goodFiles(), "PDPA", "pdpa_consent")
 

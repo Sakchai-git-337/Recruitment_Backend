@@ -35,8 +35,8 @@ function Pills({ options, value, onChange, id }: {
   )
 }
 
-function Control({ f, value, onChange, id, invalid, onPatch }: {
-  f: Field; value: unknown; onChange: (v: unknown) => void; id: string; invalid: boolean
+function Control({ f, value, onChange, id, invalid, disabled, onPatch }: {
+  f: Field; value: unknown; onChange: (v: unknown) => void; id: string; invalid: boolean; disabled?: boolean
   /** set sibling keys (address autocomplete) */
   onPatch?: (key: string, v: unknown) => void
 }) {
@@ -87,11 +87,11 @@ function Control({ f, value, onChange, id, invalid, onPatch }: {
         )
       }
       if (f.widget === "thai-province") return <ProvinceInput id={id} value={String(value ?? "")} invalid={invalid} onChange={onChange} />
-      const inputMode = f.format === "phone" ? "tel" : f.format === "postcode" ? "numeric" : f.format === "national_id" ? "numeric" : f.format === "email" ? "email" : undefined
+      const inputMode = f.format === "phone" ? "tel" : f.format === "postcode" ? "numeric" : f.format === "national_id" ? "numeric" : f.format === "decimal" ? "decimal" : f.format === "email" ? "email" : undefined
       return (
         <Input
           id={id} type={f.format === "email" ? "email" : "text"} inputMode={inputMode}
-          maxLength={f.format === "national_id" ? 13 : f.format === "postcode" ? 5 : undefined} autoComplete="off"
+          maxLength={f.format === "national_id" ? 13 : f.format === "postcode" ? 5 : undefined} autoComplete="off" disabled={disabled}
           value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} {...aria}
         />
       )
@@ -145,7 +145,7 @@ export function FieldGrid({ fields, data, form, errors, prefix = "", onChange }:
         return (
           <FormField key={f.key} id={id} label={f.label} required={f.required} error={errors[path]}
             hint={f.type === "date" ? `(ปี ค.ศ.)${age != null ? ` อายุ ${age} ปี` : ""}` : undefined} className={f.type === "textarea" ? "sm:col-span-2" : undefined}>
-            <Control f={f} id={id} value={data[f.key]} invalid={!!errors[path]} onChange={(v) => onChange(f.key, v)} onPatch={onChange} />
+            <Control f={f} id={id} value={data[f.key]} invalid={!!errors[path]} disabled={f.disabledIf?.(form)} onChange={(v) => onChange(f.key, v)} onPatch={onChange} />
           </FormField>
         )
       })}
