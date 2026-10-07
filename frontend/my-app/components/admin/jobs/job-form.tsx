@@ -11,11 +11,13 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FormField } from "@/components/app/form-field"
+import { EDUCATION_LEVELS, OPTION_LABELS } from "@/lib/application-form"
 
 type Values = {
   title: string; department: string; employment_type: EmploymentType; location: string; headcount: string
   salary_min: string; salary_max: string; description: string; requirement: string
   status: Job["status"]; closing_date: string; has_probation: boolean
+  min_age: string; min_experience_years: string; min_education: string
 }
 
 const toValues = (j?: Job): Values => ({
@@ -24,6 +26,9 @@ const toValues = (j?: Job): Values => ({
   salary_min: j?.salary_min != null ? String(j.salary_min) : "", salary_max: j?.salary_max != null ? String(j.salary_max) : "",
   description: j?.description ?? "", requirement: j?.requirement ?? "",
   status: j?.status ?? "open", closing_date: j?.closing_date ?? "", has_probation: j?.has_probation ?? false,
+  min_age: j?.min_age != null ? String(j.min_age) : "",
+  min_experience_years: j?.min_experience_years != null ? String(j.min_experience_years) : "",
+  min_education: j?.min_education ?? "",
 })
 
 const num = (s: string) => (s.trim() === "" ? null : Number(s))
@@ -40,6 +45,10 @@ function validate(v: Values): Record<string, string> {
     const n = num(v[k])
     if (n !== null && (!Number.isInteger(n) || n < 0)) e[k] = "ต้องเป็นจำนวนเต็มไม่ติดลบ"
   }
+  const age = num(v.min_age)
+  if (age !== null && (!Number.isInteger(age) || age < 15 || age > 70)) e.min_age = "ต้องเป็นจำนวนเต็ม 15-70"
+  const exp = num(v.min_experience_years)
+  if (exp !== null && (!Number.isInteger(exp) || exp < 0 || exp > 50)) e.min_experience_years = "ต้องเป็นจำนวนเต็ม 0-50"
   const [a, b] = [num(v.salary_min), num(v.salary_max)]
   if (!e.salary_min && !e.salary_max && a !== null && b !== null && a > b) e.salary_max = "เงินเดือนสูงสุดต้องไม่น้อยกว่าขั้นต่ำ"
   return e
@@ -79,6 +88,7 @@ export function JobForm({ job }: { job?: Job }) {
       salary_min: num(v.salary_min), salary_max: num(v.salary_max),
       description: v.description.trim(), requirement: v.requirement.trim(),
       status: v.status, closing_date: v.closing_date || null, has_probation: v.has_probation,
+      min_age: num(v.min_age), min_experience_years: num(v.min_experience_years), min_education: v.min_education,
     }
     setSaving(true)
     try {
@@ -132,6 +142,24 @@ export function JobForm({ job }: { job?: Job }) {
         </FormField>
         <FormField label="คุณสมบัติผู้สมัคร" id="requirement" required error={errors.requirement} className="sm:col-span-2">
           <Textarea id="requirement" rows={6} value={v.requirement} onChange={(e) => set("requirement", e.target.value)} aria-invalid={!!errors.requirement} />
+        </FormField>
+      </Section>
+
+      <Section title="เกณฑ์คัดกรองผู้สมัคร" description="ระบบจะไม่รับใบสมัครที่ไม่ผ่านเกณฑ์ เว้นว่างไว้หากไม่กำหนด">
+        <FormField label="อายุขั้นต่ำ (ปี)" id="min_age" error={errors.min_age}>
+          <Input id="min_age" type="number" min={15} max={70} value={v.min_age} onChange={(e) => set("min_age", e.target.value)} placeholder="เช่น 22" aria-invalid={!!errors.min_age} />
+        </FormField>
+        <FormField label="ประสบการณ์ทำงานขั้นต่ำ (ปี)" id="min_experience_years" error={errors.min_experience_years}>
+          <Input id="min_experience_years" type="number" min={0} max={50} value={v.min_experience_years} onChange={(e) => set("min_experience_years", e.target.value)} placeholder="เช่น 2" aria-invalid={!!errors.min_experience_years} />
+        </FormField>
+        <FormField label="วุฒิการศึกษาขั้นต่ำ" id="min_education">
+          <Select value={v.min_education || "none"} onValueChange={(x) => set("min_education", x === "none" ? "" : x)}>
+            <SelectTrigger id="min_education" className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">ไม่กำหนด</SelectItem>
+              {EDUCATION_LEVELS.map((l) => <SelectItem key={l} value={String(l)}>{OPTION_LABELS["education.level"]?.[String(l)] ?? l}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </FormField>
       </Section>
 

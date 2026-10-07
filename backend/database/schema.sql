@@ -25,6 +25,10 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headcount INT NOT NULL DEFAULT 1 CHECK
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS closing_date DATE NULL;
 -- whether this job has a probation (ทดลองงาน) stage in its pipeline
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_probation BOOLEAN NOT NULL DEFAULT false;
+-- applicant requirements; NULL / '' = no requirement
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_age INT NULL CHECK (min_age BETWEEN 15 AND 70);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_experience_years INT NULL CHECK (min_experience_years BETWEEN 0 AND 50);
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_education TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS applications (
   application_id SERIAL PRIMARY KEY,

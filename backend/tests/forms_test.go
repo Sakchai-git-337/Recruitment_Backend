@@ -355,3 +355,39 @@ func TestMeApplicationForm(t *testing.T) {
 		t.Fatal("bob should see none", w.Code)
 	}
 }
+
+func TestJobRequirements(t *testing.T) {
+	e := newFormEnv(t)
+	path := "/jobs/" + strconv.Itoa(e.job)
+	set := func(body map[string]any) {
+		t.Helper()
+		if w := doJSON(t, e.r, "PATCH", path, e.hr, body); w.Code != 200 {
+			t.Fatal(body, w.Code, w.Body.String())
+		}
+	}
+	for _, body := range []map[string]any{{"min_age": 10}, {"min_experience_years": -1}, {"min_education": "phd"}} {
+		if w := doJSON(t, e.r, "PATCH", path, e.hr, body); w.Code != 400 {
+			t.Fatal("bad requirement accepted", body, w.Code)
+		}
+	}
+
+	// validForm: born 1995-05-20, 0 years of experience, bachelor
+	reject := func(name, wantMsg, field string) {
+		t.Helper()
+		w := submit(t, e.r, e.ta, e.job, validForm(), goodFiles())
+		if w.Code != 400 || !strings.Contains(w.Body.String(), wantMsg) || !strings.Contains(w.Body.String(), `"field":"`+field+`"`) {
+			t.Fatalf("%s: %d %s", name, w.Code, w.Body.String())
+		}
+	}
+	set(map[string]any{"min_age": 70})
+	reject("too young", "อายุ 70 ปีขึ้นไป", "date_of_birth")
+	set(map[string]any{"min_age": nil, "min_experience_years": 2})
+	reject("not enough experience", "ประสบการณ์ทำงาน 2 ปีขึ้นไป", "years_of_experience")
+	set(map[string]any{"min_experience_years": nil, "min_education": "master_or_higher"})
+	reject("education too low", "ปริญญาโทขึ้นไป", "education")
+
+	set(map[string]any{"min_age": 22, "min_experience_years": 0, "min_education": "bachelor"})
+	if w := submit(t, e.r, e.ta, e.job, validForm(), goodFiles()); w.Code != 201 {
+		t.Fatal("meets requirements:", w.Code, w.Body.String())
+	}
+}

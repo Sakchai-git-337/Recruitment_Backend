@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ApiError, api, apiUpload, useUser } from "@/lib/api"
 import {
-  SECTIONS, STEP_COUNT, emptyForm, validateStep,
+  SECTIONS, STEP_COUNT, emptyForm, requirementLines, validateStep,
   type ApplicationForm, type Errors,
 } from "@/lib/application-form"
 import { DOC_TYPES, type Application, type Job } from "@/lib/types"
@@ -132,7 +132,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
     if (!touched.current.size) return
     const keys = [...touched.current]
     touched.current.clear()
-    const fresh = validateStep(step, form)
+    const fresh = validateStep(step, form, job)
     const mine = (p: string) => keys.some((k) => p === k || p.startsWith(k + "."))
     setErrors((e) => {
       const n: Errors = {}
@@ -140,7 +140,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
       for (const [p, m] of Object.entries(fresh)) if (mine(p) && (!m.startsWith("กรุณา") || p in e)) n[p] = m
       return n
     })
-  }, [form, step])
+  }, [form, step, job])
 
   function docErrors(): Errors {
     const e: Errors = {}
@@ -155,7 +155,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
   }
 
   function next() {
-    const errs = validateStep(step, form)
+    const errs = validateStep(step, form, job)
     if (Object.keys(errs).length) {
       setErrors(errs)
       toast.error("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง")
@@ -168,10 +168,10 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
   async function submit() {
     const docs = docErrors()
     let target = 0
-    for (let i = 1; i <= STEP_COUNT && !target; i++) if (Object.keys(validateStep(i, form)).length) target = i
+    for (let i = 1; i <= STEP_COUNT && !target; i++) if (Object.keys(validateStep(i, form, job)).length) target = i
     if (!target && Object.keys(docs).length) target = STEP_COUNT
     if (target) {
-      const here = { ...validateStep(target, form), ...(target === STEP_COUNT ? docs : {}) }
+      const here = { ...validateStep(target, form, job), ...(target === STEP_COUNT ? docs : {}) }
       setStep(target)
       setErrors(here)
       toast.error("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง")
@@ -212,7 +212,7 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
 
   const section = SECTIONS[step - 1]
   const last = step === STEP_COUNT
-  const stepDone = (n: number) => n < maxStep && Object.keys(validateStep(n, form)).length === 0
+  const stepDone = (n: number) => n < maxStep && Object.keys(validateStep(n, form, job)).length === 0
 
   return (
     <PublicShell>
@@ -230,6 +230,9 @@ export function ApplicationWizard({ jobId }: { jobId: string }) {
                 {job?.department && <span className="inline-flex items-center gap-1"><Briefcase className="size-3.5" />{job.department}</span>}
                 {job?.location && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{job.location}</span>}
               </div>
+              {requirementLines(job).length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">คุณสมบัติ: {requirementLines(job).join(" · ")}</p>
+              )}
             </div>
             <div className="rounded-xl border bg-card p-4 shadow-xs lg:hidden">
               <div className="mb-2 flex items-center justify-between text-sm">

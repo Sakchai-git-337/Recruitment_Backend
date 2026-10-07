@@ -379,21 +379,57 @@ function validateFields(fields: Field[], data: Row, prefix: string, form: Applic
   }
 }
 
+/** a job's applicant requirements (Job fields); null / "" = none */
+export type Requirements = { min_age?: number | null; min_experience_years?: number | null; min_education?: string }
+
+/** ม.ปลาย and ปวช. count the same; mirrors educationRank in the backend */
+export const EDUCATION_RANK: Record<string, number> = {
+  primary: 1, lower_secondary: 2, upper_secondary: 3, vocational_cert: 3, diploma: 4, bachelor: 5, master_or_higher: 6,
+}
+
+/** human-readable requirement lines, e.g. ["อายุ 22 ปีขึ้นไป", "วุฒิ ปริญญาตรี ขึ้นไป"] */
+export function requirementLines(req?: Requirements | null): string[] {
+  const out: string[] = []
+  if (req?.min_age != null) out.push(`อายุ ${req.min_age} ปีขึ้นไป`)
+  if (req?.min_experience_years) out.push(`ประสบการณ์ทำงาน ${req.min_experience_years} ปีขึ้นไป`)
+  if (req?.min_education) out.push(`วุฒิการศึกษา ${OPTION_LABELS["education.level"]?.[req.min_education] ?? req.min_education} ขึ้นไป`)
+  return out
+}
+
+function checkRequirements(sectionId: string, form: ApplicationForm, req: Requirements, errors: Errors) {
+  if (sectionId === "personal" && req.min_age != null && !errors.date_of_birth) {
+    const age = computeAge(String(form.date_of_birth ?? ""))
+    if (age != null && age < req.min_age) errors.date_of_birth = `ตำแหน่งนี้รับอายุ ${req.min_age} ปีขึ้นไป (อายุของคุณ ${age} ปี)`
+  }
+  if (sectionId === "experience" && req.min_experience_years && !errors.years_of_experience) {
+    const y = Number(form.years_of_experience)
+    if (Number.isFinite(y) && y < req.min_experience_years) errors.years_of_experience = `ตำแหน่งนี้ต้องมีประสบการณ์ทำงาน ${req.min_experience_years} ปีขึ้นไป`
+  }
+  if (sectionId === "education" && req.min_education && !errors.education) {
+    const levels = (Array.isArray(form.education) ? form.education as Row[] : []).map((r) => EDUCATION_RANK[String(r.level)] ?? 0)
+    if (levels.some(Boolean) && Math.max(...levels) < (EDUCATION_RANK[req.min_education] ?? 0)) {
+      errors.education = `ตำแหน่งนี้ต้องมีวุฒิการศึกษา ${OPTION_LABELS["education.level"]?.[req.min_education] ?? req.min_education} ขึ้นไป`
+    }
+  }
+}
+
 /** step is 1-based (1 = position ... 8 = questions & consent). Returns { fieldPath: message }, empty = valid.
- *  Paths: "first_name_th", "education" (list min rows), "education.0.institute", "current_job.salary_current". */
-export function validateStep(step: number, form: ApplicationForm): Errors {
+ *  Paths: "first_name_th", "education" (list min rows), "education.0.institute", "current_job.salary_current".
+ *  `req`: the job's requirements (age / experience / education), checked on their steps. */
+export function validateStep(step: number, form: ApplicationForm, req?: Requirements | null): Errors {
   const errors: Errors = {}
   const s = SECTIONS[step - 1]
   if (s) validateFields(s.fields, form, "", form, errors)
+  if (s && req) checkRequirements(s.id, form, req, errors)
   return errors
 }
 
-export function validateAll(form: ApplicationForm): Errors {
-  return Object.assign({}, ...SECTIONS.map((_, i) => validateStep(i + 1, form)))
+export function validateAll(form: ApplicationForm, req?: Requirements | null): Errors {
+  return Object.assign({}, ...SECTIONS.map((_, i) => validateStep(i + 1, form, req)))
 }
 
 /** first 1-based step that has errors, or null */
-export function firstInvalidStep(form: ApplicationForm): number | null {
-  for (let i = 1; i <= STEP_COUNT; i++) if (Object.keys(validateStep(i, form)).length) return i
+export function firstInvalidStep(form: ApplicationForm, req?: Requirements | null): number | null {
+  for (let i = 1; i <= STEP_COUNT; i++) if (Object.keys(validateStep(i, form, req)).length) return i
   return null
 }

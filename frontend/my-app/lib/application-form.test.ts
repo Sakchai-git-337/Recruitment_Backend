@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import {
-  SECTIONS, emptyForm, validateStep, validateAll, firstInvalidStep, isValidNationalId, computeAge, optionLabel, fieldByKey,
+  SECTIONS, emptyForm, validateStep, validateAll, firstInvalidStep, isValidNationalId, computeAge, optionLabel, fieldByKey, requirementLines,
   type ApplicationForm,
 } from "./application-form.ts"
 import { localToday } from "./job-closed.ts"
@@ -232,4 +232,21 @@ test("letters-only and phone fields reject the wrong kind of input", () => {
   assert.ok(validateStep(3, f).home_phone)
   f.father_name = "007"
   assert.ok(validateStep(4, f).father_name)
+})
+
+test("job requirements: minimum age, experience and education", () => {
+  const f = validForm() // born 1995-05-20, bachelor
+  const now = new Date()
+  const age = computeAge("1995-05-20", now)!
+  assert.ok(validateStep(2, f, { min_age: age + 1 }).date_of_birth?.includes(`${age + 1} ปีขึ้นไป`))
+  assert.equal(validateStep(2, f, { min_age: age }).date_of_birth, undefined)
+  f.years_of_experience = "1"
+  assert.ok(validateStep(7, f, { min_experience_years: 2 }).years_of_experience)
+  f.years_of_experience = "2"
+  assert.equal(validateStep(7, f, { min_experience_years: 2 }).years_of_experience, undefined)
+  assert.ok(validateStep(5, f, { min_education: "master_or_higher" }).education)
+  assert.equal(validateStep(5, f, { min_education: "bachelor" }).education, undefined)
+  assert.equal(validateStep(5, f, { min_education: "vocational_cert" }).education, undefined)
+  assert.deepEqual(requirementLines({ min_age: 22, min_experience_years: 2, min_education: "bachelor" }),
+    ["อายุ 22 ปีขึ้นไป", "ประสบการณ์ทำงาน 2 ปีขึ้นไป", "วุฒิการศึกษา ปริญญาตรี ขึ้นไป"])
 })

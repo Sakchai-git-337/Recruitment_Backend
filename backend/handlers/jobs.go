@@ -14,11 +14,28 @@ import (
 )
 
 const jobCols = `job_id, title, description, requirement, location, status, created_by,
-	department, employment_type, salary_min, salary_max, headcount, to_char(closing_date, 'YYYY-MM-DD'), has_probation`
+	department, employment_type, salary_min, salary_max, headcount, to_char(closing_date, 'YYYY-MM-DD'), has_probation,
+	min_age, min_experience_years, min_education`
 
 func scanJob(row pgx.Row, j *models.Job) error {
 	return row.Scan(&j.JobID, &j.Title, &j.Description, &j.Requirement, &j.Location, &j.Status, &j.CreatedBy,
-		&j.Department, &j.EmploymentType, &j.SalaryMin, &j.SalaryMax, &j.Headcount, &j.ClosingDate, &j.HasProbation)
+		&j.Department, &j.EmploymentType, &j.SalaryMin, &j.SalaryMax, &j.Headcount, &j.ClosingDate, &j.HasProbation,
+		&j.MinAge, &j.MinExperienceYears, &j.MinEducation)
+}
+
+// checkRequirements validates a job's applicant requirements; returns false after responding 400.
+func checkRequirements(c *gin.Context, minAge, minExp *int, minEdu *string) bool {
+	switch {
+	case minAge != nil && (*minAge < 15 || *minAge > 70):
+		httperr.Respond(c, http.StatusBadRequest, "อายุขั้นต่ำต้องอยู่ระหว่าง 15-70 ปี")
+	case minExp != nil && (*minExp < 0 || *minExp > 50):
+		httperr.Respond(c, http.StatusBadRequest, "ประสบการณ์ขั้นต่ำต้องอยู่ระหว่าง 0-50 ปี")
+	case minEdu != nil && *minEdu != "" && !educationLevels[*minEdu]:
+		httperr.Respond(c, http.StatusBadRequest, "วุฒิการศึกษาขั้นต่ำไม่ถูกต้อง")
+	default:
+		return true
+	}
+	return false
 }
 
 func validEmploymentType(s string) bool {
@@ -170,6 +187,9 @@ func CreateJob(c *gin.Context) {
 	if !checkJobExtras(c, job.SalaryMin, job.SalaryMax, in.Headcount) {
 		return
 	}
+	if !checkRequirements(c, job.MinAge, job.MinExperienceYears, &job.MinEducation) {
+		return
+	}
 	closing, ok := parseDate(c, job.ClosingDate)
 	if !ok {
 		return
@@ -184,11 +204,13 @@ func CreateJob(c *gin.Context) {
 	err := scanJob(database.DB.QueryRow(
 		context.Background(),
 		`INSERT INTO jobs (title, description, requirement, location, status, created_by,
-			department, employment_type, salary_min, salary_max, headcount, closing_date, has_probation)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			department, employment_type, salary_min, salary_max, headcount, closing_date, has_probation,
+			min_age, min_experience_years, min_education)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING `+jobCols,
 		job.Title, job.Description, job.Requirement, job.Location, job.Status, job.CreatedBy,
 		job.Department, job.EmploymentType, job.SalaryMin, job.SalaryMax, hc, closing, job.HasProbation,
+		job.MinAge, job.MinExperienceYears, job.MinEducation,
 	), &job)
 
 	if err != nil {
@@ -233,18 +255,21 @@ func UpdateJob(c *gin.Context) {
 	}
 
 	var data struct {
-		Title          *string                 `json:"title"`
-		Description    *string                 `json:"description"`
-		Requirement    *string                 `json:"requirement"`
-		Location       *string                 `json:"location"`
-		Status         *string                 `json:"status"`
-		Department     *string                 `json:"department"`
-		EmploymentType *string                 `json:"employment_type"`
-		Headcount      *int                    `json:"headcount"`
-		SalaryMin      models.Optional[int]    `json:"salary_min"`
-		SalaryMax      models.Optional[int]    `json:"salary_max"`
-		ClosingDate    models.Optional[string] `json:"closing_date"`
-		HasProbation   *bool                   `json:"has_probation"`
+		Title              *string                 `json:"title"`
+		Description        *string                 `json:"description"`
+		Requirement        *string                 `json:"requirement"`
+		Location           *string                 `json:"location"`
+		Status             *string                 `json:"status"`
+		Department         *string                 `json:"department"`
+		EmploymentType     *string                 `json:"employment_type"`
+		Headcount          *int                    `json:"headcount"`
+		SalaryMin          models.Optional[int]    `json:"salary_min"`
+		SalaryMax          models.Optional[int]    `json:"salary_max"`
+		ClosingDate        models.Optional[string] `json:"closing_date"`
+		HasProbation       *bool                   `json:"has_probation"`
+		MinAge             models.Optional[int]    `json:"min_age"`
+		MinExperienceYears models.Optional[int]    `json:"min_experience_years"`
+		MinEducation       *string                 `json:"min_education"`
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -254,7 +279,8 @@ func UpdateJob(c *gin.Context) {
 
 	if data.Title == nil && data.Description == nil && data.Requirement == nil && data.Location == nil && data.Status == nil &&
 		data.Department == nil && data.EmploymentType == nil && data.Headcount == nil &&
-		!data.SalaryMin.Set && !data.SalaryMax.Set && !data.ClosingDate.Set && data.HasProbation == nil {
+		!data.SalaryMin.Set && !data.SalaryMax.Set && !data.ClosingDate.Set && data.HasProbation == nil &&
+		!data.MinAge.Set && !data.MinExperienceYears.Set && data.MinEducation == nil {
 		httperr.Respond(c, http.StatusBadRequest, "ไม่มีข้อมูลที่ต้องแก้ไข")
 		return
 	}
@@ -297,6 +323,9 @@ func UpdateJob(c *gin.Context) {
 	if !checkJobExtras(c, newMin, newMax, data.Headcount) {
 		return
 	}
+	if !checkRequirements(c, data.MinAge.Value, data.MinExperienceYears.Value, data.MinEducation) {
+		return
+	}
 
 	var job models.Job
 
@@ -315,7 +344,10 @@ func UpdateJob(c *gin.Context) {
 			salary_min = CASE WHEN $9::boolean THEN $10::int ELSE salary_min END,
 			salary_max = CASE WHEN $11::boolean THEN $12::int ELSE salary_max END,
 			closing_date = CASE WHEN $13::boolean THEN $14::date ELSE closing_date END,
-			has_probation = COALESCE($16, has_probation)
+			has_probation = COALESCE($16, has_probation),
+			min_age = CASE WHEN $17::boolean THEN $18::int ELSE min_age END,
+			min_experience_years = CASE WHEN $19::boolean THEN $20::int ELSE min_experience_years END,
+			min_education = COALESCE($21, min_education)
 		WHERE job_id = $15
 		RETURNING `+jobCols,
 		data.Title,
@@ -331,6 +363,9 @@ func UpdateJob(c *gin.Context) {
 		data.ClosingDate.Set, closing,
 		id,
 		data.HasProbation,
+		data.MinAge.Set, data.MinAge.Value,
+		data.MinExperienceYears.Set, data.MinExperienceYears.Value,
+		data.MinEducation,
 	), &job)
 
 	if err != nil {

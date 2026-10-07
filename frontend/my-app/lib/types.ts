@@ -12,6 +12,8 @@ export type Job = {
   salary_min: number | null; salary_max: number | null
   headcount: number; closing_date: string | null // YYYY-MM-DD
   has_probation: boolean
+  /** applicant requirements (null / "" = none); min_education is an education level key */
+  min_age: number | null; min_experience_years: number | null; min_education: string
 }
 export type ApplicationDocument = {
   document_id: number; doc_type: string; filename: string

@@ -17,6 +17,10 @@ type Job struct {
 	Headcount      int     `json:"headcount"`
 	ClosingDate    *string `json:"closing_date"` // "YYYY-MM-DD" or null
 	HasProbation   bool    `json:"has_probation"`
+	// applicant requirements (nil / "" = none); MinEducation is an education level key, e.g. "bachelor"
+	MinAge             *int   `json:"min_age"`
+	MinExperienceYears *int   `json:"min_experience_years"`
+	MinEducation       string `json:"min_education"`
 }
 
 // Optional distinguishes an absent JSON key (Set=false) from an explicit null (Set=true, Value=nil).

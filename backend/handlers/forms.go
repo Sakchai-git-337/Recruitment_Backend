@@ -48,6 +48,55 @@ var educationLevels = map[string]bool{
 	"diploma": true, "bachelor": true, "master_or_higher": true,
 }
 
+// educationRank orders levels for a job's minimum education (ม.ปลาย and ปวช. count the same).
+var educationRank = map[string]int{
+	"primary": 1, "lower_secondary": 2, "upper_secondary": 3, "vocational_cert": 3,
+	"diploma": 4, "bachelor": 5, "master_or_higher": 6,
+}
+
+var educationLevelLabels = map[string]string{
+	"primary": "ประถมศึกษา", "lower_secondary": "มัธยมศึกษาตอนต้น", "upper_secondary": "มัธยมศึกษาตอนปลาย",
+	"vocational_cert": "ปวช.", "diploma": "ปวส./อนุปริญญา", "bachelor": "ปริญญาตรี", "master_or_higher": "ปริญญาโทขึ้นไป",
+}
+
+// meetsRequirements checks an already valid form against the job's minimum age / experience / education.
+func meetsRequirements(jobID int, f map[string]any) (msg, field string, err error) {
+	var minAge, minExp *int
+	var minEdu string
+	if err = database.DB.QueryRow(context.Background(),
+		`SELECT min_age, min_experience_years, min_education FROM jobs WHERE job_id = $1`, jobID).Scan(&minAge, &minExp, &minEdu); err != nil {
+		return "", "", err
+	}
+	if minAge != nil {
+		dob, _ := time.Parse("2006-01-02", str(f, "date_of_birth"))
+		today, _ := time.Parse("2006-01-02", bangkokToday())
+		age := today.Year() - dob.Year()
+		if today.Month() < dob.Month() || today.Month() == dob.Month() && today.Day() < dob.Day() {
+			age--
+		}
+		if age < *minAge {
+			return fmt.Sprintf("ตำแหน่งนี้รับอายุ %d ปีขึ้นไป (อายุของคุณ %d ปี)", *minAge, age), "date_of_birth", nil
+		}
+	}
+	if minExp != nil {
+		if y, _ := yearsOfExperience(f); y < float64(*minExp) {
+			return fmt.Sprintf("ตำแหน่งนี้ต้องมีประสบการณ์ทำงาน %d ปีขึ้นไป", *minExp), "years_of_experience", nil
+		}
+	}
+	if minEdu != "" {
+		best := 0
+		edu, _ := f["education"].([]any)
+		for _, it := range edu {
+			m, _ := it.(map[string]any)
+			best = max(best, educationRank[str(m, "level")])
+		}
+		if best < educationRank[minEdu] {
+			return "ตำแหน่งนี้ต้องมีวุฒิการศึกษา " + educationLevelLabels[minEdu] + " ขึ้นไป", "education", nil
+		}
+	}
+	return "", "", nil
+}
+
 var phoneRE = regexp.MustCompile(`^[0-9]{9,10}$`)
 
 // name/institute fields accept letters only (spaces and . ( ) - allowed as separators)
@@ -310,6 +359,13 @@ func createApplicationMultipart(c *gin.Context) {
 	}
 
 	if !checkJobOpen(c, jobID) {
+		return
+	}
+	if msg, field, err := meetsRequirements(jobID, form); err != nil {
+		httperr.RespondDB(c, err)
+		return
+	} else if msg != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": msg, "field": field})
 		return
 	}
 

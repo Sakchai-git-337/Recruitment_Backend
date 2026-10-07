@@ -1,5 +1,6 @@
 "use client"
 
+import { requirementLines } from "@/lib/application-form"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -120,7 +121,7 @@ function JobBody({ job, role, applied }: { job: Job; role: "applicant" | "recrui
           </div>
         </header>
         <Section title="รายละเอียดงาน" text={job.description} />
-        <Section title="คุณสมบัติผู้สมัคร" text={job.requirement} />
+        <Section title="คุณสมบัติผู้สมัคร" text={[requirementLines(job).map((l) => `• ${l}`).join("\n"), job.requirement].filter(Boolean).join("\n\n")} />
       </div>
 
       <aside className="rounded-xl border bg-card p-5 shadow-xs lg:sticky lg:top-24">
