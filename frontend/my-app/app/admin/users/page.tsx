@@ -60,7 +60,7 @@ function UsersPage() {
     setBusyId(u.user_id)
     try {
       await api(`/users/${u.user_id}`, { method: "PATCH", body: { role } })
-      toast.success(`เปลี่ยนสิทธิ์ของ ${u.full_name} เป็น ${role === "recruitment" ? "HR" : "ผู้สมัคร"} แล้ว`)
+      toast.success(`เปลี่ยนสิทธิ์ของ ${u.full_name} เป็น ${role === "recruitment" ? "Recruitment" : "ผู้สมัคร"} แล้ว`)
       load()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "เปลี่ยนสิทธิ์ไม่สำเร็จ")
@@ -86,13 +86,13 @@ function UsersPage() {
 
   return (
     <>
-      <PageHeader title="ผู้ใช้" description="จัดการบัญชีผู้สมัครและเจ้าหน้าที่ HR" actions={add} />
+      <PageHeader title="ผู้ใช้" description="จัดการบัญชีผู้สมัครและเจ้าหน้าที่ Recruitment" actions={add} />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Filter)}>
           <TabsList>
             <TabsTrigger value="all">ทั้งหมด</TabsTrigger>
-            <TabsTrigger value="recruitment">HR</TabsTrigger>
+            <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
             <TabsTrigger value="applicant">ผู้สมัคร</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -131,7 +131,7 @@ function UsersPage() {
         onOpenChange={(o) => !o && setDeleting(null)}
         title={`ลบผู้ใช้ ${deleting?.full_name ?? ""}?`}
         description={deleting?.role === "recruitment"
-          ? "ผู้ใช้ HR ไม่สามารถลบได้ขณะที่ยังมีข้อมูลที่ตนเป็นเจ้าของ (เช่น ตำแหน่งงานที่สร้างไว้) หากไม่ต้องการให้ใช้งานต่อ ให้เปลี่ยนสิทธิ์เป็นผู้สมัครแทน"
+          ? "ผู้ใช้ Recruitment ไม่สามารถลบได้ขณะที่ยังมีข้อมูลที่ตนเป็นเจ้าของ (เช่น ตำแหน่งงานที่สร้างไว้) หากไม่ต้องการให้ใช้งานต่อ ให้เปลี่ยนสิทธิ์เป็นผู้สมัครแทน"
           : "ใบสมัครทั้งหมดของผู้ใช้นี้จะถูกลบ และไม่สามารถกู้คืนได้"}
         confirmLabel="ลบผู้ใช้"
         destructive

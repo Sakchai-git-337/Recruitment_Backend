@@ -197,7 +197,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 	if blocked {
-		httperr.Respond(c, http.StatusConflict, "ไม่สามารถลบผู้ใช้ที่เป็น HR หรือมีข้อมูลตำแหน่งงาน/การคัดเลือกได้ ให้เปลี่ยนสิทธิ์แทน")
+		httperr.Respond(c, http.StatusConflict, "ไม่สามารถลบผู้ใช้ที่เป็น Recruitment หรือมีข้อมูลตำแหน่งงาน/การคัดเลือกได้ ให้เปลี่ยนสิทธิ์แทน")
 		return
 	}
 

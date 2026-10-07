@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export const ROLE_LABEL: Record<Role, string> = { recruitment: "HR", applicant: "ผู้สมัคร" }
+export const ROLE_LABEL: Record<Role, string> = { recruitment: "Recruitment", applicant: "ผู้สมัคร" }
 
 type Errors = Partial<Record<"full_name" | "email" | "password", string>>
 
@@ -66,7 +66,7 @@ export function UserDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{user ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้"}</DialogTitle>
-          <DialogDescription>{user ? "แก้ไขข้อมูลบัญชีผู้ใช้" : "สร้างบัญชีใหม่ให้ผู้สมัครหรือเจ้าหน้าที่ HR"}</DialogDescription>
+          <DialogDescription>{user ? "แก้ไขข้อมูลบัญชีผู้ใช้" : "สร้างบัญชีใหม่ให้ผู้สมัครหรือเจ้าหน้าที่ Recruitment"}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} noValidate className="space-y-4">
           <FormField label="ชื่อ-นามสกุล" id="u-name" required error={errors.full_name}>
