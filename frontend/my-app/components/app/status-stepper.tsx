@@ -2,7 +2,7 @@ import { Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { APP_STATUS_LABEL, type AppStatus } from "@/lib/types"
 
-const FLOW: AppStatus[] = ["pending", "screening", "interview", "passed"]
+const FULL_FLOW: AppStatus[] = ["pending", "screening", "probation", "interview", "passed"]
 type State = "done" | "current" | "todo" | "rejected" | "passed" | "rejdone"
 
 function Step({
@@ -58,19 +58,22 @@ function Step({
 }
 
 /**
- * pending -> screening -> interview -> passed; rejected is a red terminal state.
+ * pending -> screening -> probation -> interview -> passed; rejected is a red terminal state.
+ * probation is skipped when the job has none (`hasProbation` false) unless the application is already there.
  * `rejectedFrom` = stage it was rejected at: earlier steps stay done, a red line runs from that stage to "ไม่ผ่าน".
  * Clickable when `onChange` is given.
  */
 export function StatusStepper({
-  status, rejectedFrom, onChange, disabled, className,
+  status, rejectedFrom, hasProbation = true, onChange, disabled, className,
 }: {
   status: AppStatus
   rejectedFrom?: AppStatus | ""
+  hasProbation?: boolean
   onChange?: (s: AppStatus) => void
   disabled?: boolean
   className?: string
 }) {
+  const FLOW = FULL_FLOW.filter((s) => s !== "probation" || hasProbation || status === s || rejectedFrom === s)
   const rejected = status === "rejected"
   // rows rejected before the stage was recorded fall back to the first step
   const at = rejected ? FLOW.indexOf(rejectedFrom || "pending") : -1

@@ -1,5 +1,5 @@
 export type Role = "applicant" | "recruitment"
-export type AppStatus = "pending" | "screening" | "interview" | "passed" | "rejected"
+export type AppStatus = "pending" | "screening" | "probation" | "interview" | "passed" | "rejected"
 export type Result = "pending" | "pass" | "fail"
 export type InterviewStatus = "scheduled" | "completed" | "cancelled"
 
@@ -11,6 +11,7 @@ export type Job = {
   department: string; employment_type: EmploymentType
   salary_min: number | null; salary_max: number | null
   headcount: number; closing_date: string | null // YYYY-MM-DD
+  has_probation: boolean
 }
 export type ApplicationDocument = {
   document_id: number; doc_type: string; filename: string
@@ -20,7 +21,7 @@ export type Application = {
   application_id: number; user_id: number; job_id: number
   apply_date: string; status: AppStatus; note: string; rejected_from?: AppStatus | ""
   applicant_name?: string; applicant_email?: string; applicant_phone?: string; job_title?: string
-  job_status?: "open" | "closed"; job_closing_date?: string | null
+  job_status?: "open" | "closed"; job_closing_date?: string | null; job_has_probation?: boolean
 }
 export type Screening = {
   screening_id: number; application_id: number; screened_by: number
@@ -35,11 +36,12 @@ export type WorkTest = {
   test_date: string; test_result: string; test_note: string
 }
 
-export const APP_STATUSES: AppStatus[] = ["pending", "screening", "interview", "passed", "rejected"]
+export const APP_STATUSES: AppStatus[] = ["pending", "screening", "probation", "interview", "passed", "rejected"]
 
 export const APP_STATUS_LABEL: Record<AppStatus, string> = {
   pending: "รอพิจารณา",
   screening: "คัดกรอง",
+  probation: "ทดลองงาน",
   interview: "สัมภาษณ์",
   passed: "ผ่าน",
   rejected: "ไม่ผ่าน",
@@ -50,6 +52,7 @@ export const APP_STATUS_COLOR: Record<AppStatus, string> = {
   pending: "bg-gray-100 text-gray-700",
   screening: "bg-sky-100 text-sky-700",
   interview: "bg-amber-100 text-amber-700",
+  probation: "bg-teal-100 text-teal-700",
   passed: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
 }

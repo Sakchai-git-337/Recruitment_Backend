@@ -56,7 +56,7 @@ export default function AdminJobDetailPage({ params }: { params: Promise<{ id: s
         <Meta icon={CalendarClock}>ปิดรับ {job.closing_date ? formatDate(job.closing_date) : "ไม่กำหนด"}</Meta>
       </div>
       <h2 className="mb-3 text-base font-semibold text-foreground">ผู้สมัคร</h2>
-      <JobPipeline jobId={job.job_id} />
+      <JobPipeline jobId={job.job_id} hasProbation={job.has_probation} />
     </>
   )
 }

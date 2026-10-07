@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"backend/database"
@@ -170,8 +171,17 @@ func TestJobsAndApplications(t *testing.T) {
 	if rf := from(); rf != "interview" {
 		t.Fatalf("note-only patch changed rejected_from=%q", rf)
 	}
-	if w = doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "screening"}); w.Code != 200 {
-		t.Fatalf("screening: %d %s", w.Code, w.Body.String())
+	// probation only for jobs that have it
+	if w = doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "probation"}); w.Code != 400 {
+		t.Fatalf("probation on job without it: %d", w.Code)
+	}
+	var appJob int
+	database.DB.QueryRow(context.Background(), `SELECT job_id FROM applications WHERE application_id=$1`, app.ApplicationID).Scan(&appJob)
+	if w = doJSON(t, r, "PATCH", fmt.Sprintf("/jobs/%d", appJob), hr, map[string]any{"has_probation": true}); w.Code != 200 || !strings.Contains(w.Body.String(), `"has_probation":true`) {
+		t.Fatalf("enable probation: %d %s", w.Code, w.Body.String())
+	}
+	if w = doJSON(t, r, "PATCH", appPath, hr, map[string]any{"status": "probation"}); w.Code != 200 {
+		t.Fatalf("probation: %d %s", w.Code, w.Body.String())
 	}
 	if rf := from(); rf != "" {
 		t.Fatalf("rejected_from not cleared: %q", rf)

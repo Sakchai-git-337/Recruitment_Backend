@@ -16,6 +16,7 @@ type Job struct {
 	SalaryMax      *int    `json:"salary_max"`
 	Headcount      int     `json:"headcount"`
 	ClosingDate    *string `json:"closing_date"` // "YYYY-MM-DD" or null
+	HasProbation   bool    `json:"has_probation"`
 }
 
 // Optional distinguishes an absent JSON key (Set=false) from an explicit null (Set=true, Value=nil).

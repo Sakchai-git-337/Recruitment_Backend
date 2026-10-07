@@ -97,7 +97,7 @@ function Content() {
                   </div>
                   <StatusBadge status={a.status} />
                 </div>
-                <StatusStepper status={a.status} rejectedFrom={a.rejected_from} className="mt-6 mb-1" />
+                <StatusStepper status={a.status} rejectedFrom={a.rejected_from} hasProbation={a.job_has_probation} className="mt-6 mb-1" />
                 {showClosedNotice(a) && (
                   <div className="mt-5 flex items-center gap-3 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
                     <Lock className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />

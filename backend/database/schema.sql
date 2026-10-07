@@ -23,6 +23,8 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_min INT NULL CHECK (salary_min 
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_max INT NULL CHECK (salary_max >= 0);
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS headcount INT NOT NULL DEFAULT 1 CHECK (headcount >= 1);
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS closing_date DATE NULL;
+-- whether this job has a probation (ทดลองงาน) stage in its pipeline
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS has_probation BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS applications (
   application_id SERIAL PRIMARY KEY,

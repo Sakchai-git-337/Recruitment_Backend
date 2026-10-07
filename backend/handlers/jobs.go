@@ -14,11 +14,11 @@ import (
 )
 
 const jobCols = `job_id, title, description, requirement, location, status, created_by,
-	department, employment_type, salary_min, salary_max, headcount, to_char(closing_date, 'YYYY-MM-DD')`
+	department, employment_type, salary_min, salary_max, headcount, to_char(closing_date, 'YYYY-MM-DD'), has_probation`
 
 func scanJob(row pgx.Row, j *models.Job) error {
 	return row.Scan(&j.JobID, &j.Title, &j.Description, &j.Requirement, &j.Location, &j.Status, &j.CreatedBy,
-		&j.Department, &j.EmploymentType, &j.SalaryMin, &j.SalaryMax, &j.Headcount, &j.ClosingDate)
+		&j.Department, &j.EmploymentType, &j.SalaryMin, &j.SalaryMax, &j.Headcount, &j.ClosingDate, &j.HasProbation)
 }
 
 func validEmploymentType(s string) bool {
@@ -184,11 +184,11 @@ func CreateJob(c *gin.Context) {
 	err := scanJob(database.DB.QueryRow(
 		context.Background(),
 		`INSERT INTO jobs (title, description, requirement, location, status, created_by,
-			department, employment_type, salary_min, salary_max, headcount, closing_date)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			department, employment_type, salary_min, salary_max, headcount, closing_date, has_probation)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING `+jobCols,
 		job.Title, job.Description, job.Requirement, job.Location, job.Status, job.CreatedBy,
-		job.Department, job.EmploymentType, job.SalaryMin, job.SalaryMax, hc, closing,
+		job.Department, job.EmploymentType, job.SalaryMin, job.SalaryMax, hc, closing, job.HasProbation,
 	), &job)
 
 	if err != nil {
@@ -244,6 +244,7 @@ func UpdateJob(c *gin.Context) {
 		SalaryMin      models.Optional[int]    `json:"salary_min"`
 		SalaryMax      models.Optional[int]    `json:"salary_max"`
 		ClosingDate    models.Optional[string] `json:"closing_date"`
+		HasProbation   *bool                   `json:"has_probation"`
 	}
 
 	if err := c.ShouldBindJSON(&data); err != nil {
@@ -253,7 +254,7 @@ func UpdateJob(c *gin.Context) {
 
 	if data.Title == nil && data.Description == nil && data.Requirement == nil && data.Location == nil && data.Status == nil &&
 		data.Department == nil && data.EmploymentType == nil && data.Headcount == nil &&
-		!data.SalaryMin.Set && !data.SalaryMax.Set && !data.ClosingDate.Set {
+		!data.SalaryMin.Set && !data.SalaryMax.Set && !data.ClosingDate.Set && data.HasProbation == nil {
 		httperr.Respond(c, http.StatusBadRequest, "ไม่มีข้อมูลที่ต้องแก้ไข")
 		return
 	}
@@ -313,7 +314,8 @@ func UpdateJob(c *gin.Context) {
 			headcount = COALESCE($8, headcount),
 			salary_min = CASE WHEN $9::boolean THEN $10::int ELSE salary_min END,
 			salary_max = CASE WHEN $11::boolean THEN $12::int ELSE salary_max END,
-			closing_date = CASE WHEN $13::boolean THEN $14::date ELSE closing_date END
+			closing_date = CASE WHEN $13::boolean THEN $14::date ELSE closing_date END,
+			has_probation = COALESCE($16, has_probation)
 		WHERE job_id = $15
 		RETURNING `+jobCols,
 		data.Title,
@@ -328,6 +330,7 @@ func UpdateJob(c *gin.Context) {
 		data.SalaryMax.Set, data.SalaryMax.Value,
 		data.ClosingDate.Set, closing,
 		id,
+		data.HasProbation,
 	), &job)
 
 	if err != nil {

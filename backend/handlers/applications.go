@@ -19,7 +19,7 @@ import (
 const applicationSelect = `
 	SELECT a.application_id, a.user_id, a.job_id, a.apply_date, a.status, a.note, a.rejected_from,
 	       u.full_name, u.email, COALESCE(u.phone, ''), j.title,
-	       j.status, to_char(j.closing_date, 'YYYY-MM-DD')
+	       j.status, to_char(j.closing_date, 'YYYY-MM-DD'), j.has_probation
 	FROM applications a
 	JOIN users u ON u.user_id = a.user_id
 	JOIN jobs j ON j.job_id = a.job_id
@@ -40,12 +40,13 @@ func scanApplication(row pgx.Row, app *models.Application) error {
 		&app.JobTitle,
 		&app.JobStatus,
 		&app.JobClosingDate,
+		&app.JobHasProbation,
 	)
 }
 
 func validApplicationStatus(s string) bool {
 	switch s {
-	case "pending", "screening", "interview", "passed", "rejected":
+	case "pending", "screening", "probation", "interview", "passed", "rejected":
 		return true
 	}
 	return false
@@ -266,6 +267,20 @@ func UpdateApplication(c *gin.Context) {
 	if data.Status != nil && !validApplicationStatus(*data.Status) {
 		httperr.Respond(c, http.StatusBadRequest, "status ของใบสมัครไม่ถูกต้อง")
 		return
+	}
+
+	if data.Status != nil && *data.Status == "probation" {
+		var has bool
+		err := database.DB.QueryRow(context.Background(),
+			`SELECT j.has_probation FROM applications a JOIN jobs j ON j.job_id = a.job_id WHERE a.application_id = $1`, id).Scan(&has)
+		if err != nil {
+			httperr.RespondDB(c, err)
+			return
+		}
+		if !has {
+			httperr.Respond(c, http.StatusBadRequest, "ตำแหน่งงานนี้ไม่มีขั้นทดลองงาน")
+			return
+		}
 	}
 
 	result, err := database.DB.Exec(

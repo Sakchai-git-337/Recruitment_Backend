@@ -1,7 +1,7 @@
 import { APP_STATUSES, APP_STATUS_LABEL, type AppStatus } from "@/lib/types"
 
 const BAR: Record<AppStatus, string> = {
-  pending: "bg-slate-400", screening: "bg-sky-500", interview: "bg-amber-500", passed: "bg-emerald-500", rejected: "bg-red-500",
+  pending: "bg-slate-400", screening: "bg-sky-500", interview: "bg-amber-500", probation: "bg-teal-500", passed: "bg-emerald-500", rejected: "bg-red-500",
 }
 
 export function PipelineBar({ counts }: { counts: Record<AppStatus, number> }) {

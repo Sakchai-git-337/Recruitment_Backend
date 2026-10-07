@@ -15,7 +15,7 @@ import { FormField } from "@/components/app/form-field"
 type Values = {
   title: string; department: string; employment_type: EmploymentType; location: string; headcount: string
   salary_min: string; salary_max: string; description: string; requirement: string
-  status: Job["status"]; closing_date: string
+  status: Job["status"]; closing_date: string; has_probation: boolean
 }
 
 const toValues = (j?: Job): Values => ({
@@ -23,7 +23,7 @@ const toValues = (j?: Job): Values => ({
   location: j?.location ?? "", headcount: String(j?.headcount ?? 1),
   salary_min: j?.salary_min != null ? String(j.salary_min) : "", salary_max: j?.salary_max != null ? String(j.salary_max) : "",
   description: j?.description ?? "", requirement: j?.requirement ?? "",
-  status: j?.status ?? "open", closing_date: j?.closing_date ?? "",
+  status: j?.status ?? "open", closing_date: j?.closing_date ?? "", has_probation: j?.has_probation ?? false,
 })
 
 const num = (s: string) => (s.trim() === "" ? null : Number(s))
@@ -78,7 +78,7 @@ export function JobForm({ job }: { job?: Job }) {
       location: v.location.trim(), headcount: Number(v.headcount),
       salary_min: num(v.salary_min), salary_max: num(v.salary_max),
       description: v.description.trim(), requirement: v.requirement.trim(),
-      status: v.status, closing_date: v.closing_date || null,
+      status: v.status, closing_date: v.closing_date || null, has_probation: v.has_probation,
     }
     setSaving(true)
     try {
@@ -147,6 +147,15 @@ export function JobForm({ job }: { job?: Job }) {
         </FormField>
         <FormField label="วันปิดรับสมัคร" id="closing_date" hint="เว้นว่าง = ไม่กำหนด">
           <Input id="closing_date" type="date" value={v.closing_date} onChange={(e) => set("closing_date", e.target.value)} />
+        </FormField>
+        <FormField label="ขั้นทดลองงาน" id="has_probation" hint="มีขั้นทดลองงานก่อนสัมภาษณ์หรือไม่">
+          <Select value={v.has_probation ? "yes" : "no"} onValueChange={(x) => set("has_probation", x === "yes")}>
+            <SelectTrigger id="has_probation" className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yes">มีทดลองงาน</SelectItem>
+              <SelectItem value="no">ไม่มีทดลองงาน</SelectItem>
+            </SelectContent>
+          </Select>
         </FormField>
       </Section>
 

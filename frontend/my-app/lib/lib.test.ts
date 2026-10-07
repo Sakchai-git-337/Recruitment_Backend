@@ -11,7 +11,7 @@ const app = (id: number, status: Application["status"]): Application => ({
 
 test("countByStatus counts each status, zero when missing", () => {
   assert.deepEqual(countByStatus([app(1, "pending"), app(2, "pending"), app(3, "passed")]), {
-    pending: 2, screening: 0, interview: 0, passed: 1, rejected: 0,
+    pending: 2, screening: 0, interview: 0, probation: 0, passed: 1, rejected: 0,
   })
 })
 

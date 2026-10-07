@@ -12,10 +12,10 @@ import { EmptyState } from "@/components/app/empty-state"
 import { LoadingState, ErrorState } from "@/components/app/states"
 
 const DOT: Record<AppStatus, string> = {
-  pending: "bg-slate-400", screening: "bg-sky-500", interview: "bg-amber-500", passed: "bg-emerald-500", rejected: "bg-red-500",
+  pending: "bg-slate-400", screening: "bg-sky-500", interview: "bg-amber-500", probation: "bg-teal-500", passed: "bg-emerald-500", rejected: "bg-red-500",
 }
 
-export function JobPipeline({ jobId }: { jobId: number }) {
+export function JobPipeline({ jobId, hasProbation }: { jobId: number; hasProbation: boolean }) {
   const [apps, setApps] = useState<Application[] | null>(null)
   const [error, setError] = useState("")
   const [tick, setTick] = useState(0)
@@ -57,11 +57,13 @@ export function JobPipeline({ jobId }: { jobId: number }) {
   if (apps.length === 0) return <EmptyState icon={Users} title="ยังไม่มีผู้สมัคร" text="เมื่อมีผู้สมัครตำแหน่งนี้ จะแสดงที่นี่" />
 
   const groups = groupByStatus(apps)
+  // no probation column for jobs without it, unless someone is still sitting in it
+  const statuses = APP_STATUSES.filter((s) => s !== "probation" || hasProbation || groups.probation.length > 0)
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-      <div className="grid min-w-max grid-flow-col auto-cols-[16rem] gap-4 xl:min-w-0 xl:grid-flow-row xl:auto-cols-auto xl:grid-cols-5">
-        {APP_STATUSES.map((s) => (
+      <div className="grid min-w-max grid-flow-col auto-cols-[16rem] gap-4 xl:min-w-0 xl:auto-cols-fr">
+        {statuses.map((s) => (
           <section
             key={s}
             aria-label={APP_STATUS_LABEL[s]}
@@ -120,7 +122,7 @@ export function JobPipeline({ jobId }: { jobId: number }) {
                       onChange={(e) => void move(a, e.target.value as AppStatus)}
                       className="h-9 w-full appearance-none rounded-lg border border-input bg-transparent pr-8 pl-3 text-sm text-foreground/80 shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {APP_STATUSES.map((x) => <option key={x} value={x}>{APP_STATUS_LABEL[x]}</option>)}
+                      {statuses.map((x) => <option key={x} value={x}>{APP_STATUS_LABEL[x]}</option>)}
                     </select>
                     <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                     </div>
