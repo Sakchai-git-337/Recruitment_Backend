@@ -100,7 +100,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </SheetContent>
       </Sheet>
       <main className="lg:pl-60 print:pl-0">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</div>
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8 print:max-w-none print:p-0">{children}</div>
       </main>
     </div>
   )

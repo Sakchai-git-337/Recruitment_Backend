@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/app/status-badge"
 import { EmptyState } from "@/components/app/empty-state"
 import { ErrorState, LoadingState } from "@/components/app/states"
 import { FormViewer } from "@/components/application/form-viewer"
+import { PrintForm } from "@/components/application/print-form"
 import { SelectionPanel, type Run } from "@/components/admin/applications/selection-panel"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -118,7 +119,7 @@ export default function ApplicationDetailPage() {
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="mt-6 gap-5">
+      <Tabs value={tab} onValueChange={setTab} className="mt-6 gap-5 print:m-0 print:gap-0">
         <div className="flex items-end justify-between gap-3 border-b print:hidden">
           <div className="-mb-px overflow-x-auto">
             <TabsList variant="line" className="h-auto gap-1 p-0">
@@ -138,11 +139,8 @@ export default function ApplicationDetailPage() {
         <TabsContent value="form">
           {data.form ? (
             <>
-              <div className="mb-4 hidden print:block">
-                <h1 className="text-xl font-semibold">ใบสมัครงาน: {name}</h1>
-                <p className="text-sm text-foreground/70">{app.job_title} · สมัครเมื่อ {formatDate(app.apply_date)}</p>
-              </div>
-              <FormViewer data={data.form.data} consentAt={data.form.consent_at} />
+              <FormViewer data={data.form.data} consentAt={data.form.consent_at} className="print:hidden" />
+              <PrintForm data={data.form.data} jobTitle={app.job_title} docTypes={data.docs.map((d) => d.doc_type)} consentAt={data.form.consent_at} />
             </>
           ) : (
             <EmptyState icon={FileText} title="ไม่มีใบสมัครแบบออนไลน์" text="ใบสมัครนี้ถูกสร้างโดยไม่มีแบบฟอร์ม" />
